@@ -23,7 +23,7 @@ MD.newState = function () {
     heightMarks: 0,
     dadHits: 0,
     flags: {},
-    settings: { vibrate: true },
+    settings: { vibrate: true, music: true, sfx: true },
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };

@@ -11,6 +11,7 @@ window.MD = window.MD || {};
   const wait = ms => new Promise(r => setTimeout(r, ms));
   const buzz = ms => { if (MD.state.settings.vibrate && navigator.vibrate) navigator.vibrate(ms); };
   const F = t => MD.fill(t);
+  const S = name => MD.audio && MD.audio.sfx(name);
 
   /* ── 共用 ── */
   function open(bg, title, hint) {
@@ -35,6 +36,7 @@ window.MD = window.MD || {};
   }
 
   function hearts(field, n = 6, x, y) {
+    S('sparkle');
     const r = field.getBoundingClientRect();
     for (let i = 0; i < n; i++) {
       const h = document.createElement('div');
@@ -78,6 +80,8 @@ window.MD = window.MD || {};
         <button class="btn primary">好</button>`;
       field.appendChild(d);
       buzz(20);
+      S('success');
+      for (let i = 1; i <= (stars || 0); i++) setTimeout(() => S('star'), 250 + i * 160);
       d.querySelector('button').onclick = () => { close(); resolve(); };
     });
   }
@@ -125,7 +129,7 @@ window.MD = window.MD || {};
           b.style.top = (br.bottom - fr.top) + 'px';
           b.style.transform = 'translate(-50%,-50%) scale(.3)';
           setTimeout(() => b.remove(), 460);
-          cnt.textContent = `${++got} / ${total}`; buzz(12);
+          cnt.textContent = `${++got} / ${total}`; buzz(12); S('pop');
           if (got % 4 === 0 && got < total) kid(field, pick(['happy', 'sparkle']), pick(['好快！', '撿球搭檔！', '這顆是另一個牌子的！']));
           if (got === total) resolve();
         };
@@ -161,8 +165,8 @@ window.MD = window.MD || {};
         field.appendChild(b);
       });
       const px = field.clientWidth * res.x / 100, py = field.clientHeight * res.y / 100;
-      if (res.ok) { hit++; me++; pow(field, px, py, pick(['啪！', '好球！', 'Nice！', '咻！'])); }
-      else { them++; pow(field, px, py, pick(['沒關係！', '下一球！'])); }
+      if (res.ok) { hit++; me++; S('hit'); pow(field, px, py, pick(['啪！', '好球！', 'Nice！', '咻！'])); }
+      else { them++; S('miss'); pow(field, px, py, pick(['沒關係！', '下一球！'])); }
       cnt.textContent = opts.score ? `${F('{kid}')} ${me} : ${them} 對手` : `接到 ${hit} 球`;
       if (n % 4 === 0) kid(field, res.ok ? 'happy' : 'smile', res.ok ? pick(['再來！', '手肘先往後！']) : '沒關係！');
       await wait(360);
@@ -219,7 +223,7 @@ window.MD = window.MD || {};
         l.onclick = () => {
           l.remove(); buzz(10);
           if (l.classList.contains('gold')) { finished = true; resolve(); return; }
-          got++; cnt.textContent = `🍃 ${got}`;
+          got++; S('paper'); cnt.textContent = `🍃 ${got}`;
           if (got === need) kid(field, 'sparkle', '等一下！那片紅色的！');
         };
         l.addEventListener('animationend', () => { l.remove(); if (l.classList.contains('gold')) golden = false; });
@@ -270,7 +274,7 @@ window.MD = window.MD || {};
       btn.onclick = e => {
         e.stopPropagation();
         if (btn.classList.contains('ready') && !pushedThisCycle) {
-          pushedThisCycle = true; good++; amp = Math.min(48, amp + 6.5); buzz(25);
+          pushedThisCycle = true; good++; amp = Math.min(48, amp + 6.5); buzz(25); S('chime');
           pow(field, field.clientWidth / 2, field.clientHeight * .25, pick(['咻～', '好高！', '飛起來了！']));
           sw.querySelector('.swing-kid').innerHTML = MD.art.char('kid', good > 3 ? 'sparkle' : 'happy');
           meter.style.width = (good / need * 100) + '%';
@@ -312,7 +316,7 @@ window.MD = window.MD || {};
           b.style.setProperty('--dx', rand(-120, 120) + 'px');
           b.style.animationDuration = rand(4, 6.5) + 's';
           b.onclick = () => {
-            b.classList.add('popped'); setTimeout(() => b.remove(), 200); buzz(8);
+            b.classList.add('popped'); setTimeout(() => b.remove(), 200); buzz(8); S('bubble');
             cnt.textContent = `🫧 ${++popped}`;
             if (popped === 7) kid(field, 'sparkle', '最大的那個是我的！');
             if (popped >= need) resolve();
@@ -417,7 +421,7 @@ window.MD = window.MD || {};
         b.style.left = rand(10, 80) + '%'; b.style.top = rand(8, 42) + '%';
         b.born = performance.now();
         b.onclick = e => {
-          e.stopPropagation(); buzz(12);
+          e.stopPropagation(); buzz(12); S('pop');
           pow(field, b.offsetLeft + 20, b.offsetTop, pick(['走開～', '噓！', '掰掰！']));
           b.remove();
           if (distracted === b) { distracted = null; desk.querySelector('.desk-kid').innerHTML = MD.art.char('kid', 'think'); say(field, pick(['……好，繼續。', '我剛剛寫到哪？', '（低頭繼續寫）'])); }
@@ -507,6 +511,7 @@ window.MD = window.MD || {};
     const offer = left.sort(() => Math.random() - .5).slice(0, 3);
     const v = await choose(foot, offer.map(id => ({ icon: MD.INGREDIENTS[id].icon, label: MD.INGREDIENTS[id].name, v: id })), 'xl');
     MD.state.ingredients.push(v);
+    S('chime');
     const unlocked = Object.entries(MD.DISHES).filter(([, d]) => d.from === v);
     unlocked.forEach(([id]) => { if (!MD.state.dishes.includes(id)) MD.state.dishes.push(id); });
     kid(field, 'happy', Math.random() < .5 ? '阿姨說我很會挑！' : '我來提！我很有力氣。');
@@ -590,7 +595,7 @@ window.MD = window.MD || {};
       toss.style.left = res === 'out' ? '92%' : '62%';
       toss.style.transform = 'translateX(-50%) scale(.5)';
       k.innerHTML = MD.art.char('kid', res === 'out' ? 'surprised' : 'sparkle');
-      buzz(res === 'ace' ? 30 : 12);
+      buzz(res === 'ace' ? 30 : 12); S(res === 'out' ? 'miss' : 'hit'); if (res === 'ace') setTimeout(() => S('chime'), 200);
       pow(field, field.clientWidth * .62, field.clientHeight * .2, res === 'ace' ? 'ACE！' : res === 'in' ? '進了！' : '出界～');
       if (res === 'ace') { perfect++; box.classList.add('hit'); }
       if (res !== 'out') good++;
@@ -663,7 +668,7 @@ window.MD = window.MD || {};
       let k = 0;
       foot.innerHTML = `<span class="counter">點盤子，一口一口吃</span>`;
       plate.onclick = () => {
-        bite(++k); buzz(10);
+        bite(++k); buzz(10); S('bite');
         plate.classList.remove('chomp'); void plate.offsetWidth; plate.classList.add('chomp');
         kid(field, 'happy', pick(['（嚼嚼）', '（咕嚕）', '嗯！', '（大口）', '（喀滋）']));
         if (k >= BITES) { plate.onclick = null; dish.classList.add('gone'); setTimeout(resolve, 350); }
@@ -721,7 +726,7 @@ window.MD = window.MD || {};
         b.className = 'ing'; b.textContent = icon;
         let cuts = 0;
         b.onclick = () => {
-          cuts++; buzz(10);
+          cuts++; buzz(10); S('chop');
           pow(field, b.offsetLeft + b.offsetWidth / 2 + board.offsetLeft, board.offsetTop, pick(['咚！', '咚咚！', '喀！']));
           b.style.transform = `scale(${1 - cuts * .15}) rotate(${cuts * 12}deg)`;
           if (cuts >= 3) {
@@ -740,6 +745,7 @@ window.MD = window.MD || {};
     // 下鍋，看準時機起鍋
     setHead(head, '滋滋滋……', '指針到粉紅色的「剛剛好」時，按「起鍋！」');
     pan.classList.add('sizzle');
+    MD.audio && MD.audio.sizzle(true);
     say(field, pick(['好香！！', '鍋子在唱歌。', '媽媽小心燙。']));
     const gauge = document.createElement('div'); gauge.className = 'gauge';
     gauge.innerHTML = '<span class="g-raw">生</span><span class="g-good">剛剛好</span><span class="g-burn">焦</span><i class="g-needle"></i>';
@@ -767,6 +773,7 @@ window.MD = window.MD || {};
     });
     foot.innerHTML = '';
     pan.classList.remove('sizzle');
+    MD.audio && MD.audio.sizzle(false);
     const st = result === 'perfect' ? 3 : result === 'good' ? 2 : 1;
     say(field, result === 'burnt' ? '有一點點焦……可是很香！' : pick(['完美！', '顏色剛剛好！', '媽媽是大廚！']));
     setHead(head, d.name + '完成', '');
@@ -818,7 +825,7 @@ window.MD = window.MD || {};
       el.className = 'kb-deco'; el.textContent = MD.BENTO_DECOS[id].icon;
       el.style.left = BENTO_SPOTS[spot][0] + '%'; el.style.top = BENTO_SPOTS[spot][1] + '%';
       el.onclick = () => { placed.delete(spot); el.remove(); };
-      rice.appendChild(el); buzz(10);
+      rice.appendChild(el); buzz(10); S('pop');
     };
     Object.entries(MD.BENTO_DECOS).forEach(([id, dc]) => {
       const b = document.createElement('button');
@@ -894,12 +901,12 @@ window.MD = window.MD || {};
         pow(field, e.clientX - r.left, e.clientY - r.top, pick(w.hit));
         say(field, pick(['等、等一下！', '我可以解釋！', '老婆大人饒命！', '我錯了我錯了！']));
         bar.style.width = (hp / HP * 100) + '%';
-        buzz(w.id === 'pillow' ? 12 : 30);
+        buzz(w.id === 'pillow' ? 12 : 30); S(w.id === 'glare' ? 'soft' : 'whack');
         if (hp <= 0) { field.onpointerdown = null; resolve(); }
       };
     });
     say(field, w.id === 'glare' ? '（{dad}石化了）' : '哇啊啊啊——！');
-    buzz([40, 60, 80]);
+    buzz([40, 60, 80]); S('fly');
     target.style.filter = ''; target.classList.remove('hit'); target.classList.add('fly');
     await wait(1300);
     const star = document.createElement('div'); star.className = 'twinkle-star'; star.textContent = '⭐'; field.appendChild(star);
@@ -961,7 +968,7 @@ window.MD = window.MD || {};
       btn.onclick = () => {
         tries++;
         const flash = document.createElement('div'); flash.className = 'cam-flash'; field.appendChild(flash);
-        setTimeout(() => flash.remove(), 400); buzz(15);
+        setTimeout(() => flash.remove(), 400); buzz(15); S('shutter');
         if (btn.classList.contains('ready')) { clearInterval(h); resolve(); }
         else say(field, cur.dad === 'sleepy' ? '……爸爸眨眼了。再一張！' : cur.kid === 'think' ? '{kid}在看別的地方。再一張！' : '有人沒有笑！再一張！');
       };
@@ -991,7 +998,7 @@ window.MD = window.MD || {};
       field.onpointerdown = e => {
         n++; buzz(8);
         const r = field.getBoundingClientRect();
-        pow(field, e.clientX - r.left, e.clientY - r.top, pick(['駕！', '駕駕！', '衝啊！']));
+        S('step'); S('pop'); pow(field, e.clientX - r.left, e.clientY - r.top, pick(['駕！', '駕駕！', '衝啊！']));
         stage.style.left = (20 + (n / NEED) * 60) + '%';
         stage.classList.remove('gallop'); void stage.offsetWidth; stage.classList.add('gallop');
         meter.style.width = (n / NEED * 100) + '%';
@@ -1039,7 +1046,7 @@ window.MD = window.MD || {};
         const b = document.createElement('button'); b.className = 'cloth'; b.textContent = c;
         b.style.left = (8 + (i % 4) * 23 + rand(-3, 3)) + '%'; b.style.top = (10 + Math.floor(i / 4) * 20 + rand(-3, 3)) + '%';
         b.style.transform = `rotate(${rand(-30, 30)}deg)`;
-        b.onclick = () => { b.classList.add('folded'); buzz(8); cnt.textContent = `🧺 ${clothes.length - left + 1}`; if (--left === 0) setTimeout(resolve, 300); };
+        b.onclick = () => { b.classList.add('folded'); buzz(8); S('paper'); cnt.textContent = `🧺 ${clothes.length - left + 1}`; if (--left === 0) setTimeout(resolve, 300); };
         field.appendChild(b);
       });
     });

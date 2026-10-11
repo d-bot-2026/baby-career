@@ -16,6 +16,7 @@ window.MD = window.MD || {};
   function show(name) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     $('screen-' + name).classList.add('active');
+    if (MD.audio) MD.audio.music(name === 'night' ? 'night' : 'day');
   }
 
   /* ── UI 工具 ── */
@@ -100,6 +101,7 @@ window.MD = window.MD || {};
     MD.state.mian += n;
     MD.state.today.earned += n;
     renderMian();
+    if (n > 0 && MD.audio) MD.audio.sfx('chime');
     if (why) MD.ui.toast(`${MD.art.mian(22)} +${n} ${esc(why)}`);
   }
   function renderMian() {
@@ -384,6 +386,7 @@ window.MD = window.MD || {};
     const pts = y1 === y2 ? [[x2, y2]] : [[vx, y1], [vx, y2], [x2, y2]];
     const w = $('walkers');
     w.classList.add('walking');
+    const steps = setInterval(() => { if (w.classList.contains('walking') && MD.audio) MD.audio.sfx('step'); }, 330);
     kidBubble(pick(MD.LINES.arrive));
     const map = $('map'), W = map.clientWidth, H = map.clientHeight;
     let cx = x1, cy = y1;
@@ -400,6 +403,7 @@ window.MD = window.MD || {};
       if (i === stopAt) await walkStop();
     }
     w.classList.remove('walking');
+    clearInterval(steps);
     kidBubble();
     t.at = id;
   }
@@ -469,6 +473,7 @@ window.MD = window.MD || {};
       const nlv = cardLevel(x.card);
       if (nlv.index > lv.index) {
         t.memories.push({ id: `${x.card}-lv${nlv.index + 1}`, icon: c.icon, title: `${c.name}升級：${nlv.task}` });
+        MD.audio && MD.audio.sfx('fanfare');
         await MD.ui.popup(`<p class="label">熟悉度提升</p><div class="big-icon">${c.icon}</div><h3>${c.name} Lv${nlv.index + 1}</h3><p class="mem">下次的任務：${nlv.task}</p><p class="tap">點一下繼續</p>`);
       }
     }
@@ -477,6 +482,7 @@ window.MD = window.MD || {};
     if (w && !w.done && (w.type === 'dish' ? x.dish === w.id : x.card === w.id)) {
       w.done = true;
       result.mian += 5;
+      MD.audio && MD.audio.sfx('fanfare');
       await MD.ui.popup(`<p class="label">心願達成</p><div class="night-kid" style="width:110px;margin:0 auto">${MD.art.char('kid', 'sparkle')}</div><h3>${F(pick(['媽媽你記得！！', '媽媽是魔法師嗎？', '這是我今天最開心的事！']))}</h3><p class="mem">${F(w.line)}</p><p class="tap">${MD.art.mian(18)} +5　點一下繼續</p>`);
     }
     addMian(result.mian);
@@ -520,6 +526,7 @@ window.MD = window.MD || {};
     MD.save();
     renderNight();
     for (const m of t.newMilestones) {
+      MD.audio && MD.audio.sfx('fanfare');
       await MD.ui.popup(`<p class="label">${MD.art.mian(20)} 綿累積到 ${m.at}</p><div class="big-icon">${m.icon}</div><h3>${esc(m.title)}</h3><p class="tap">點一下繼續</p>`);
     }
     if (MD.DAY_EVENTS[s.day]?.letter && !s.flags['letter' + s.day]) {
@@ -628,6 +635,15 @@ window.MD = window.MD || {};
         <div class="seg" id="set-vib"><button data-v="1" class="${s.settings.vibrate ? 'on' : ''}">開</button><button data-v="0" class="${!s.settings.vibrate ? 'on' : ''}">關</button></div>
       </div>
       <div class="set-card">
+        <h3>背景音樂</h3>
+        <div class="seg" id="set-music"><button data-v="1" class="${s.settings.music !== false ? 'on' : ''}">開</button><button data-v="0" class="${s.settings.music === false ? 'on' : ''}">關</button></div>
+      </div>
+      <div class="set-card">
+        <h3>音效</h3>
+        <div class="seg" id="set-sfx"><button data-v="1" class="${s.settings.sfx !== false ? 'on' : ''}">開</button><button data-v="0" class="${s.settings.sfx === false ? 'on' : ''}">關</button></div>
+        <p style="margin:8px 0 0">iPhone 如果沒有聲音，請確認側邊的靜音開關沒有打開。</p>
+      </div>
+      <div class="set-card">
         <h3>角色設定 <span class="badge">之後的版本開放自訂</span></h3>
         <table class="profile-table">
           <tr><td>孩子</td><td>${esc(p.kid.name)}（${p.kid.age} 歲，${p.kid.gender === 'girl' ? '女孩' : '男孩'}，獨生子）</td></tr>
@@ -657,6 +673,8 @@ window.MD = window.MD || {};
       </div>`;
     $('exp').value = MD.exportCode();
     $('set-vib').onclick = e => { const v = e.target.dataset.v; if (!v) return; s.settings.vibrate = v === '1'; MD.save(); openSettings(); };
+    $('set-music').onclick = e => { const v = e.target.dataset.v; if (!v) return; s.settings.music = v === '1'; MD.save(); MD.audio.apply(); openSettings(); };
+    $('set-sfx').onclick = e => { const v = e.target.dataset.v; if (!v) return; s.settings.sfx = v === '1'; MD.save(); MD.audio.apply(); openSettings(); };
     $('btn-copy').onclick = async () => {
       try { await navigator.clipboard.writeText($('exp').value); } catch (e) { $('exp').select(); document.execCommand('copy'); }
       MD.ui.toast('已複製 ✓');
@@ -684,6 +702,14 @@ window.MD = window.MD || {};
     $('btn-settings').onclick = openSettings;
     document.querySelectorAll('[data-back]').forEach(b => (b.onclick = goTitle));
     $('btn-map-home').onclick = goTitle;
+    // 地圖上的快速靜音：同時開關音樂和音效
+    const soundIcon = () => ($('btn-sound').textContent = MD.state.settings.music === false && MD.state.settings.sfx === false ? '🔇' : '🔊');
+    $('btn-sound').onclick = () => {
+      const muted = MD.state.settings.music === false && MD.state.settings.sfx === false;
+      MD.state.settings.music = MD.state.settings.sfx = muted;
+      MD.save(); MD.audio.apply(); soundIcon();
+    };
+    soundIcon();
     $('btn-plan-home').onclick = goTitle;
     document.addEventListener('visibilitychange', () => { if (document.hidden && MD.hasSave()) MD.save(); });
     refreshTitle();
