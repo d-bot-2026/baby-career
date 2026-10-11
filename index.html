@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#fbeee6">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="我的寶貝事業">
+  <title>我的寶貝事業</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=5">
+</head>
+<body>
+  <div id="app">
+
+    <!-- 首頁 -->
+    <section id="screen-title" class="screen active">
+      <div class="title-sky"><span class="cloud c1">☁️</span><span class="cloud c2">☁️</span><span class="cloud c3">☁️</span></div>
+      <div class="title-box">
+        <p class="title-small">帶著孩子，經營人生最溫柔的事業</p>
+        <h1 class="title-main">我的<span>寶貝</span>事業</h1>
+      </div>
+      <div class="title-art" id="title-art"></div>
+      <div class="title-ground"></div>
+      <div class="title-menu">
+        <p class="title-progress" id="title-progress"></p>
+        <button class="btn primary" id="btn-continue">繼續</button>
+        <button class="btn" id="btn-new">開始</button>
+        <div class="title-row">
+          <button class="btn small" id="btn-album">📔 回憶</button>
+          <button class="btn small" id="btn-fridge">🧲 冰箱</button>
+          <button class="btn small icon" id="btn-settings" aria-label="設定">⚙️</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 早上：排行程 -->
+    <section id="screen-plan" class="screen">
+      <header class="page-head"><button class="icon-btn" id="btn-plan-home" aria-label="回首頁">⌂</button><h2>今天的行程</h2></header>
+      <div class="plan-body" id="plan-body"></div>
+    </section>
+
+    <!-- 地圖 -->
+    <section id="screen-map-screen" class="screen">
+      <header class="map-top">
+        <button class="icon-btn" id="btn-map-home" aria-label="回首頁">⌂</button>
+        <div class="day-chip" id="map-day"></div>
+        <div class="mian-count chip-like"></div>
+      </header>
+      <div class="map" id="map"></div>
+      <div class="day-strip" id="day-strip"></div>
+    </section>
+
+    <!-- 晚上 -->
+    <section id="screen-night" class="screen">
+      <div class="night-body" id="night-body"></div>
+    </section>
+
+    <!-- 回憶 -->
+    <section id="screen-album" class="screen">
+      <header class="page-head"><button class="icon-btn" data-back>←</button><h2>回憶</h2></header>
+      <div class="album-grid" id="album-grid"></div>
+    </section>
+
+    <!-- 冰箱 -->
+    <section id="screen-fridge-screen" class="screen">
+      <header class="page-head"><button class="icon-btn" data-back>←</button><h2>冰箱與門框</h2></header>
+      <div class="fridge-body" id="fridge-body"></div>
+    </section>
+
+    <!-- 設定 -->
+    <section id="screen-settings" class="screen">
+      <header class="page-head"><button class="icon-btn" data-back>←</button><h2>設定</h2></header>
+      <div class="settings" id="settings"></div>
+    </section>
+
+    <div class="overlay" id="scene"></div>
+    <div class="overlay" id="sheet"></div>
+    <div class="overlay" id="popup"></div>
+    <div class="saved-toast" id="saved-toast">已存檔 ✓</div>
+    <div class="float-toast" id="float-toast"></div>
+  </div>
+
+  <script src="js/config.js?v=5"></script>
+  <script src="js/save.js?v=5"></script>
+  <script src="js/art.js?v=5"></script>
+  <script src="js/data.js?v=5"></script>
+  <script src="js/acts.js?v=5"></script>
+  <script src="js/game.js?v=5"></script>
+</body>
+</html>

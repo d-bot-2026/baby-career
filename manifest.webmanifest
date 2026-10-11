@@ -1,0 +1,17 @@
+{
+  "name": "我的寶貝事業",
+  "short_name": "寶貝事業",
+  "description": "帶著孩子，經營人生最溫柔的事業。一款五分鐘的療癒小遊戲。",
+  "lang": "zh-Hant",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#fdf4ee",
+  "theme_color": "#fbeee6",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
