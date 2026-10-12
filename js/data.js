@@ -33,7 +33,7 @@ MD.CARDS = {
   tennis:   { place: 'tennis', name: '網球課',   icon: '🎾', energy: -2, full: -2,
               levels: [{ at: 0, task: '發球練習', act: 'serve' }, { at: 0, task: '撿球', act: 'pickup' }, { at: 2, task: '來回對打', act: 'rally' }, { at: 4, task: '小小比賽', act: 'match' }] },
   park:     { place: 'park',   name: '公園',     icon: '🌳', energy: 0, full: -1, calm: true,
-              levels: [{ at: 0, task: '撿葉子', act: 'leaves' }, { at: 0, task: '推鞦韆', act: 'swing' }, { at: 2, task: '吹泡泡', act: 'bubbles' }] },
+              levels: [{ at: 0, task: '撿葉子', act: 'leaves' }, { at: 0, task: '溜滑梯', act: 'slide' }, { at: 2, task: '吹泡泡', act: 'bubbles' }] },
   market:   { place: 'market', name: '傳統市場', icon: '🧺', energy: 0, full: 0,
               levels: [{ at: 0, task: '買新食材', act: 'market' }] },
   cafe:     { place: 'cafe',   name: '咖啡店',   icon: '☕', energy: 1, full: 0, calm: true,
@@ -127,7 +127,8 @@ MD.WISHES = [
   { type: 'card', id: 'park',         line: '我想去公園看螞蟻。' },
   { type: 'card', id: 'tennis',       line: '今天可以打網球嗎？' },
   { type: 'card', id: 'market',       line: '我想去市場幫阿姨提東西。' },
-  { type: 'card', id: 'cafe',         line: '我想跟媽媽去咖啡店畫畫。' },
+  { type: 'card', id: 'park',         line: '我想去公園溜滑梯！' },
+  { type: 'card', id: 'homework',     line: '今天的功課我想要媽媽陪我寫。' },
 ];
 
 /* 造型便當：Ethan 點一個主題，媽媽用配料擺出來 */
@@ -150,6 +151,14 @@ MD.BENTO_DECOS = {
   broccoli: { name: '花椰菜',   icon: '🥦' },
 };
 
+/* 爸爸做的便當（隔天放學時會有同學的反應） */
+MD.DAD_BENTO = {
+  kanji:   { name: '海苔寫字便當', art: '加油', dad: '我用海苔寫了「加油」！', kid: '爸爸，「油」的三點水掉了一點。', school: '爸爸在飯上寫「加油」，可是海苔掉了，變成「加由」。全班笑了好久。' },
+  black:   { name: '全海苔飯糰', art: '⚫', dad: '這是黑色的足球！', kid: '……像一顆炸彈。', school: '整個飯糰都包海苔，同學說是黑色的月亮。我覺得很酷。' },
+  sausage: { name: '超長香腸便當', art: '🌭', dad: '一整根香腸，男子漢的便當！', kid: '它比便當盒還長耶。', school: '有一根超級長的香腸，我分給三個同學。我變得很受歡迎。' },
+  face:    { name: '爸爸自畫像便當', art: '🤓', dad: '這是我！帥吧？', kid: '爸爸的眼睛是兩顆豆子。', school: '同學問我便當上的人是誰。我說是爸爸。他們說「好像喔」。' },
+};
+
 /* 綿的里程碑：只累積、不花用，到了就留下一個紀念 */
 MD.MILESTONES = [
   { at: 30,  id: 'h1',     icon: '📏', title: '門框上的第一道刻度', kind: 'height' },
@@ -164,7 +173,15 @@ MD.MILESTONES = [
 
 /* 短短的台詞（一次只出現一句） */
 MD.LINES = {
-  arrive: ['走吧！', '媽媽，牽手。', '我數過了，到那邊是 312 步。', '出發！', '我走前面！'],
+  // 走路時說的話：依目的地不同，最後一組是到哪裡都可以說的
+  arrive: {
+    school: ['今天要聽寫，我有一點緊張。', '我要第一個到教室。', '媽媽，放學你會在門口嗎？', '我今天要問老師為什麼天空是藍的。'],
+    tennis: ['我的球拍準備好了！', '今天要練反拍。', '教練說我的手肘很棒。', '我要打出 ACE！'],
+    park: ['我要去看螞蟻有沒有搬完家。', '溜滑梯在等我！', '公園的風比較香。', '今天的葉子是什麼顏色？'],
+    market: ['我要幫阿姨提東西。', '市場有魚的味道。', '今天要買什麼？我可以挑嗎？', '賣菜的阿姨記得我的名字。'],
+    home: ['回家囉！', '我想念我的恐龍了。', '回家要先洗手，我知道。', '今天晚餐吃什麼？'],
+    any: ['走吧！', '媽媽，牽手。', '我走前面！', '我們比賽誰先到！', '我數過了，到那邊是 312 步。', '紅綠燈要等綠色的小人。', '我要踩白色的線走。'],
+  },
   walkStop: [
     { icon: '🐜', line: '媽媽等一下……螞蟻在搬家。' },
     { icon: '🍃', line: '這片葉子是完美的形狀。' },

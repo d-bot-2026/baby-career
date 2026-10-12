@@ -44,3 +44,19 @@ MD.fill = function (text, profile) {
 };
 
 MD.hasTrait = t => MD.state.profile.kid.traits.includes(t);
+
+/* 隨機挑一個，但最近挑過的先不要（台詞不會一直重複）。
+ * 記錄存在 MD.state.recent，所以關掉遊戲再打開也記得。 */
+MD.pick = function (arr) {
+  if (!arr || !arr.length) return undefined;
+  if (arr.length < 3) return arr[Math.floor(Math.random() * arr.length)];
+  const key = arr.length + ':' + arr.slice(0, 3).map(x => (typeof x === 'string' ? x : JSON.stringify(x)).slice(0, 12)).join('|');
+  const store = (MD.state && (MD.state.recent = MD.state.recent || {})) || (MD._recent = MD._recent || {});
+  const seen = store[key] || [];
+  const pool = arr.map((_, i) => i).filter(i => !seen.includes(i));
+  const i = pool[Math.floor(Math.random() * pool.length)];
+  seen.push(i);
+  while (seen.length > Math.max(1, Math.floor(arr.length * .6))) seen.shift();
+  store[key] = seen;
+  return arr[i];
+};

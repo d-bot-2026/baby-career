@@ -4,7 +4,7 @@
 window.MD = window.MD || {};
 
 MD.SAVE_KEY = 'baby-career-save';
-MD.SAVE_VERSION = 3;
+MD.SAVE_VERSION = 4;
 
 MD.newState = function () {
   return {
@@ -40,6 +40,12 @@ MD.MIGRATIONS = {
   // v2 → v3：拿掉「網球轉播」卡片
   2: s => {
     if (s.today && !s.today.nightDone && s.today.plan && s.today.plan.some(x => x.card === 'tv')) s.today = null;
+    return s;
+  },
+  // v3 → v4：便當改成前一天晚上準備
+  3: s => {
+    if (s.today && !s.today.nightDone && s.today.plan && s.today.plan.some(x => x.slot === 'bento')) s.today = null;
+    if (s.today && typeof s.today.bento === 'string') s.today.bento = { dish: s.today.bento, by: 'mom' };
     return s;
   },
 };

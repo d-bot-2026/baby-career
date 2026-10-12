@@ -6,7 +6,7 @@ window.MD = window.MD || {};
 (function () {
   const $ = id => document.getElementById(id);
   const wait = ms => new Promise(r => setTimeout(r, ms));
-  const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+  const pick = arr => MD.pick(arr);
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const F = t => esc(MD.fill(t));
   const clamp = v => Math.max(0, Math.min(5, v));
@@ -119,7 +119,6 @@ window.MD = window.MD || {};
     const school = !we && !holiday;
     const plan = [{ slot: 'breakfast', kind: 'meal' }];
     if (school) {
-      plan.push({ slot: 'bento', kind: 'meal' });
       plan.push({ slot: 'morning', kind: 'act', card: 'school', fixed: true });
     } else {
       plan.push({ slot: 'morning', kind: 'act' });
@@ -134,7 +133,10 @@ window.MD = window.MD || {};
     // Ethan 今天的心願（只挑已經做得到的）
     const wishes = MD.WISHES.filter(w => w.type === 'card' || s.dishes.includes(w.id));
     const wish = Object.assign({ done: false }, pick(wishes));
-    return { plan, idx: 0, earned: 0, nut: { c: 0, p: 0, v: 0 }, at: 'home', confirmed: false, drawings: [], memories: [], bento: null, holiday, wish };
+    // 前一天晚上準備好的便當（上學日才帶）
+    const bento = school ? s.nextBento : null;
+    s.nextBento = null;
+    return { plan, idx: 0, earned: 0, nut: { c: 0, p: 0, v: 0 }, at: 'home', confirmed: false, drawings: [], memories: [], bento, holiday, wish };
   }
 
   const usedCards = () => MD.state.today.plan.filter(x => x.kind === 'act' && x.card).map(x => x.card);
@@ -235,7 +237,7 @@ window.MD = window.MD || {};
       </div>
       <div class="plan-actions">
         <button class="btn" id="btn-auto">✨ 幫我排</button>
-        <button class="btn primary" id="btn-go" ${allSet ? '' : 'data-off="1"'}>出門囉！</button>
+        <button class="btn primary" id="btn-go" ${allSet ? '' : 'data-off="1"'}>開始今天！</button>
       </div>`;
     renderMian();
     document.querySelectorAll('.slot').forEach(b => (b.onclick = () => onSlot(+b.dataset.i)));
@@ -251,12 +253,10 @@ window.MD = window.MD || {};
     const t = MD.state.today, x = t.plan[i];
     if (x.kind === 'act') {
       if (x.card === 'school') {
-        const ok = await MD.ui.confirm(`今天要幫${F('{kid}')}請假嗎？<br><small>上午會空出來，可以排其他行程；午餐改在家吃。</small>`, '請假', '照常上學');
+        const ok = await MD.ui.confirm(`今天要幫${F('{kid}')}請假嗎？<br><small>上午會空出來，可以排其他行程；午餐改在家吃，便當當晚餐的配菜。</small>`, '請假', '照常上學');
         if (!ok) return;
         t.leave = true;
         x.card = null; x.fixed = false;
-        const bi = t.plan.findIndex(p => p.slot === 'bento');
-        if (bi >= 0) t.plan.splice(bi, 1);
         t.plan.splice(t.plan.indexOf(x) + 1, 0, { slot: 'lunch', kind: 'meal' });
         renderPlan();
         return;
@@ -348,7 +348,7 @@ window.MD = window.MD || {};
     renderMian();
   }
 
-  const itemPlace = x => (x.kind === 'act' ? MD.CARDS[x.card].place : x.slot === 'snack' ? MD.state.today.at : 'home');
+  const itemPlace = x => (x.kind === 'act' ? MD.CARDS[x.card].place : x.slot === 'snack' && MD.state.today.at !== 'cafe' ? MD.state.today.at : 'home');
 
   function updatePin() {
     const t = MD.state.today, x = t.plan[t.idx];
@@ -378,7 +378,7 @@ window.MD = window.MD || {};
     w.style.left = x + '%'; w.style.top = y + '%';
   }
 
-  async function walkTo(id) {
+  async function walkTo(id, solo = false) {
     const t = MD.state.today;
     if (t.at === id) return;
     const [x1, y1] = nodeOf(t.at), [x2, y2] = nodeOf(id);
@@ -386,8 +386,9 @@ window.MD = window.MD || {};
     const pts = y1 === y2 ? [[x2, y2]] : [[vx, y1], [vx, y2], [x2, y2]];
     const w = $('walkers');
     w.classList.add('walking');
+    w.classList.toggle('solo', solo);
     const steps = setInterval(() => { if (w.classList.contains('walking') && MD.audio) MD.audio.sfx('step'); }, 330);
-    kidBubble(pick(MD.LINES.arrive));
+    if (solo) kidBubble(''); else kidBubble(pick(Math.random() < .6 && MD.LINES.arrive[id] ? MD.LINES.arrive[id] : MD.LINES.arrive.any));
     const map = $('map'), W = map.clientWidth, H = map.clientHeight;
     let cx = x1, cy = y1;
     const stopAt = t.idx > 0 && Math.random() < .3 ? 1 : -1;
@@ -452,21 +453,28 @@ window.MD = window.MD || {};
         merge(await MD.ACTS.family());
       }
       const ctx = { dish: x.dish, today: t, bg: t.at === 'tennis' ? 'court' : t.at === 'home' ? 'kitchen' : t.at === 'cafe' ? 'cafe' : t.at === 'market' ? 'market' : 'park' };
-      const fn = { breakfast: 'breakfast', bento: 'bento', lunch: 'lunch', snack: 'snack', dinner: 'cook' }[x.slot];
+      const fn = { breakfast: 'breakfast', lunch: 'lunch', snack: 'snack', dinner: 'cook' }[x.slot];
       merge(await MD.ACTS[fn](ctx));
-      if (x.slot === 'bento') t.bento = x.dish;
-      else s.kid.full = clamp(s.kid.full + (x.slot === 'snack' ? 1 : x.slot === 'dinner' ? 3 : 2));
+      s.kid.full = clamp(s.kid.full + (x.slot === 'snack' ? 1 : x.slot === 'dinner' ? 3 : 2));
       for (const k of d.nut) t.nut[k]++;
+      if (x.slot === 'dinner' && s.day % 7 >= 0 && ((s.day) % 7) < 5 && !s.nextBento) {
+        const r = await MD.ACTS.bentoNight({ dish: x.dish, today: t });
+        merge(r);
+        s.nextBento = r.bento;
+      }
     } else {
       const c = MD.CARDS[x.card];
       if (x.card === 'school' && t.at === 'home' && MD.hasTrait('adhd') && (s.day === 1 || Math.random() < .35)) merge(await MD.ACTS.shoes());
-      await walkTo(c.place);
+      await walkTo(c.place, x.card === 'cafe');
       const lv = cardLevel(x.card);
       const fed = s.kid.full >= 2;
       merge(await MD.ACTS[pickAct(x.card)]({ today: t }));
       s.placeVisits[x.card] = (s.placeVisits[x.card] || 0) + 1;
       (s.placeLast = s.placeLast || {})[x.card] = s.day;
-      if (x.card === 'school' && t.bento) s.kid.full = clamp(s.kid.full + 2);
+      if (x.card === 'school' && t.bento && t.bento.dish) {   // 中午吃了便當
+        s.kid.full = clamp(s.kid.full + 2);
+        for (const k of MD.DISHES[t.bento.dish].nut) t.nut[k]++;
+      }
       s.kid.full = clamp(s.kid.full + c.full);
       s.kid.energy = clamp(s.kid.energy + c.energy);
       if (fed) result.mian += 1;
