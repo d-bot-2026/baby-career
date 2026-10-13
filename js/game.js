@@ -225,11 +225,11 @@ window.MD = window.MD || {};
     const allSet = planDone();
     const n = nutOfPlan();
     const recs = recommendCards();
-    const hint = MD.DAY_EVENTS[s.day]?.planHint && !allSet;
+    const hint = !s.flags.planned && !allSet;   // 第一次排行程時的提示
     const wOk = wishPlanned();
     $('plan-body').innerHTML = `
       <div class="plan-head">
-        <div><b>第 ${s.day} 天</b>・${MD.WEEKDAYS[dow()]} ${MD.WEATHER[dow()]}${t.holiday ? `<span class="holiday">${t.holiday}</span>` : ''}${t.leave ? '<span class="holiday">今天請假</span>' : ''}</div>
+        <div><b>${MD.GRADE_NAMES[MD.grade()]}</b>・${MD.WEEKDAYS[dow()]}${t.holiday ? `<span class="holiday">${t.holiday}</span>` : ''}${t.leave ? '<span class="holiday">今天請假</span>' : ''}</div>
         <div class="mian-count"></div>
       </div>
       <div class="kid-status">
@@ -247,11 +247,11 @@ window.MD = window.MD || {};
           const sl = MD.SLOTS[x.slot];
           if (x.kind === 'meal') {
             const d = x.dish && MD.DISHES[x.dish];
-            return `<button class="slot meal ${d ? 'set' : ''}" data-i="${i}"><span class="slot-name">${sl.icon} ${sl.name}</span>${d ? `<span class="slot-val">${d.icon} ${d.name}</span>` : `<span class="slot-empty">選菜色</span>`}</button>`;
+            return `<button class="slot meal ${d ? 'set' : ''}" data-i="${i}"><span class="slot-name">${sl.name}</span>${d ? `<span class="slot-val">${d.icon} ${d.name}</span>` : `<span class="slot-empty">選菜色</span>`}</button>`;
           }
           const c = x.card && MD.CARDS[x.card];
           const tagTxt = x.card === 'school' ? '點我可以請假' : '固定';
-          return `<button class="slot act ${c ? 'set' : ''} ${x.fixed ? 'fixed' : ''}" data-i="${i}"><span class="slot-name">${sl.icon} ${sl.name}</span>${c ? `<span class="slot-val">${c.icon} ${F(c.name)}${x.fixed ? `<em>${tagTxt}</em>` : ''}</span>` : `<span class="slot-empty">放一張卡片</span>`}</button>`;
+          return `<button class="slot act ${c ? 'set' : ''} ${x.fixed ? 'fixed' : ''}" data-i="${i}"><span class="slot-name">${sl.name}</span>${c ? `<span class="slot-val">${c.icon} ${F(c.name)}${x.fixed ? `<em>${tagTxt}</em>` : ''}</span>` : `<span class="slot-empty">放一張卡片</span>`}</button>`;
         }).join('')}
       </div>
       <div class="cards-title">推薦行程<small>點一下放進空格</small></div>
@@ -272,7 +272,7 @@ window.MD = window.MD || {};
     $('btn-auto').onclick = autoPlan;
     $('btn-go').onclick = () => {
       if (!planDone()) { MD.ui.toast('還有空格喔'); return; }
-      t.confirmed = true; MD.save(); openMap();
+      t.confirmed = true; s.flags.planned = true; MD.save(); openMap();
     };
   }
 
@@ -357,7 +357,7 @@ window.MD = window.MD || {};
       <span class="tree" style="left:4%;top:37%">🌳</span><span class="tree" style="left:96%;top:75%">🌲</span>
       <span class="tree" style="left:34%;top:1%">🌸</span><span class="tree" style="left:66%;top:56%">🌷</span>
       <div class="walkers" id="walkers" data-me="${esc(MD.state.profile.mom.ownName || '')}"><div class="w-mom">${MD.art.char('mom', 'smile')}</div><div class="w-kid">${MD.art.char('kid', 'happy')}</div><div class="w-bubble" id="w-bubble"></div></div>
-      <div class="pin" id="pin">👇</div>`;
+      <div class="pin" id="pin">▼</div>`;
     placeWalkers(t.at, false);
     document.querySelectorAll('.place').forEach(b => (b.onclick = () => onPlace(b.dataset.id)));
     renderStrip();
@@ -712,12 +712,35 @@ window.MD = window.MD || {};
     $('title-progress').innerHTML = esc(prog);
   }
 
+  // 開始前的說明：整段是國小一年級到國中三年級，也可以從比較大的年級開始
+  const START_GRADES = [
+    { g: 1, label: '國小一年級', note: '完整的 9 年，約 67 天' },
+    { g: 3, label: '國小三年級', note: '約 53 天' },
+    { g: 5, label: '國小五年級', note: '約 39 天' },
+    { g: 7, label: '國中一年級', note: '約 25 天，直接到會考與畢業' },
+  ];
+  function chooseStartGrade() {
+    return MD.ui.popup(`<div class="start-intro">
+        <p class="label" style="justify-content:flex-start">開始之前</p>
+        <h3>陪他，從小學走到國中畢業</h3>
+        <p>這個遊戲從國小一年級開始，一路到國中三年級的會考、畢業和一趟全家旅行。每個年級是遊戲裡的 7 天，每天大約玩 5 到 10 分鐘。<br>如果不想玩這麼久，也可以從比較大的年紀開始。</p>
+        <div class="start-grid">${START_GRADES.map((o, i) => `<button data-v="${o.g}" class="${i === 0 ? 'rec' : ''}"><b>${o.label}</b><small>${o.note}</small></button>`).join('')}</div>
+      </div>`, { buttons: true }).then(v => +v || 0);
+  }
+
   async function newGame() {
     if (MD.hasSave()) {
-      if (!(await MD.ui.confirm('要從第一天重新開始嗎？<br><small>所有進度都會重來。</small>', '重新開始', '先不要'))) return;
-      const settings = MD.state.settings;
-      MD.state = MD.newState(); MD.state.settings = settings;
+      if (!(await MD.ui.confirm('要從頭重新開始嗎？<br><small>所有進度都會重來。</small>', '重新開始', '先不要'))) return;
     }
+    const g = await chooseStartGrade();
+    if (!g) return;
+    const settings = MD.state.settings;
+    MD.state = MD.newState(); MD.state.settings = settings;
+    const s = MD.state;
+    s.day = (g - 1) * MD.DAYS_PER_GRADE + 1;
+    s.heightMarks = g - 1;                     // 之前的年級，門框上已經有刻度了
+    s.flags.startGrade = g;
+    s.memories.push({ id: 'start', icon: '🌱', title: `故事從${MD.GRADE_NAMES[g]}開始`, day: s.day });
     ensureDefaults();
     MD.requestPersist();
     MD.save();
@@ -828,6 +851,10 @@ window.MD = window.MD || {};
     soundIcon();
     $('btn-plan-home').onclick = goTitle;
     document.addEventListener('visibilitychange', () => { if (document.hidden && MD.hasSave()) MD.save(); });
+    // 手機上：雙擊、雙指縮放都不要放大畫面（iOS Safari 不理會 user-scalable=no，要另外擋）
+    document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+    ['gesturestart', 'gesturechange', 'gestureend'].forEach(ev => document.addEventListener(ev, e => e.preventDefault(), { passive: false }));
+    document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });
     refreshTitle();
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
   }

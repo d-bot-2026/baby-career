@@ -6,21 +6,22 @@
 window.MD = window.MD || {};
 
 (function () {
-  const INK = '#5a4440';
-  const SKIN = '#fde3d3';
-  const BLUSH = '#f6a9a4';
+  // 大人感的簡約插畫：比例自然、細線條、低飽和的大地色
+  const INK = '#3a322d';
+  const SKIN = '#f1dccb';
+  const BLUSH = '#e2a48e';
 
   const CHAR = {
-    mom: { hair: '#8a6250', shirt: '#f6dfd0', accent: '#e9a8a3' },
-    kid: { hair: '#4b3a34', shirt: '#bfe5d3', accent: '#e8f27a' },
-    dad: { hair: '#55504d', shirt: '#bcd0ec', accent: '#8fa6c9' },
+    mom: { hair: '#3b2a22', shirt: '#efe6d8', outer: '#8a9a7b', accent: '#c4775a' },
+    kid: { hair: '#2c2420', shirt: '#a9bfa0', accent: '#f1ece2' },
+    dad: { hair: '#2f2b29', shirt: '#3e4a5c', accent: '#e9e2d6' },
   };
 
-  // 孩子的樣子依成長階段變化：低年級薄荷綠、中年級天空藍、高年級黃色、國中白襯衫制服
-  const KID_LOOK = { low: '#bfe5d3', mid: '#bfe0ff', high: '#ffe4a8', jh: '#ffffff' };
+  // 孩子的衣服依成長階段變化：鼠尾草綠 → 霧藍 → 芥末黃 → 國中白襯衫制服
+  const KID_LOOK = { low: '#a9bfa0', mid: '#9fb3c8', high: '#d9b66f', jh: '#f7f4ee' };
   function kidLook() {
     const st = (MD.stage && MD.state) ? MD.stage() : 'low';
-    return Object.assign({}, CHAR.kid, { shirt: KID_LOOK[st], uniform: st === 'jh' });
+    return Object.assign({}, CHAR.kid, { shirt: KID_LOOK[st], uniform: st === 'jh', stage: st });
   }
 
   // 表情 → 眼睛 / 嘴巴 / 眉毛 / 額外效果
@@ -30,108 +31,114 @@ window.MD = window.MD || {};
     smile:     { eyes: 'arc',   mouth: 'smile' },
     sad:       { eyes: 'dot',   mouth: 'frown', brows: 'sad' },
     cry:       { eyes: 'arc',   mouth: 'wave',  brows: 'sad', extra: 'tears' },
-    surprised: { eyes: 'big',   mouth: 'o' },
+    surprised: { eyes: 'big',   mouth: 'o',     brows: 'up' },
     think:     { eyes: 'side',  mouth: 'flat',  extra: 'sweat' },
-    angry:     { eyes: 'dot',   mouth: 'grit',  brows: 'angry', extra: 'vein' },
+    angry:     { eyes: 'dot',   mouth: 'frown', brows: 'angry', extra: 'vein' },
     smug:      { eyes: 'half',  mouth: 'smirk' },
     hurt:      { eyes: 'x',     mouth: 'wave',  extra: 'stars' },
-    sparkle:   { eyes: 'star',  mouth: 'open' },
+    sparkle:   { eyes: 'star',  mouth: 'open',  brows: 'up' },
     sleepy:    { eyes: 'line',  mouth: 'o',     extra: 'zzz' },
-    shy:       { eyes: 'arc',   mouth: 'wave',  extra: 'bigblush' },
+    shy:       { eyes: 'arc',   mouth: 'smile', extra: 'bigblush' },
   };
 
-  function eyes(type, y) {
-    const L = 46, R = 74;
-    const pair = f => f(L) + f(R);
+  const EY = 63, EL = 51, ER = 69, MY = 75;
+  function eyes(type) {
+    const pair = f => f(EL) + f(ER);
+    const s = `stroke="${INK}" stroke-width="1.8" fill="none" stroke-linecap="round"`;
     switch (type) {
-      case 'arc':  return pair(x => `<path d="M${x - 6} ${y + 1} q6 -7 12 0" stroke="${INK}" stroke-width="3" fill="none" stroke-linecap="round"/>`);
-      case 'big':  return pair(x => `<circle cx="${x}" cy="${y}" r="6.5" fill="#fff" stroke="${INK}" stroke-width="2.5"/><circle cx="${x}" cy="${y}" r="2.5" fill="${INK}"/>`);
-      case 'side': return pair(x => `<circle cx="${x + 3}" cy="${y - 1}" r="4" fill="${INK}"/>`);
-      case 'half': return pair(x => `<path d="M${x - 6} ${y} h12" stroke="${INK}" stroke-width="3" stroke-linecap="round"/><path d="M${x - 5} ${y} q5 5 10 0" fill="${INK}"/>`);
-      case 'x':    return pair(x => `<path d="M${x - 5} ${y - 5} l10 10 M${x + 5} ${y - 5} l-10 10" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>`);
-      case 'line': return pair(x => `<path d="M${x - 6} ${y + 1} q6 3 12 0" stroke="${INK}" stroke-width="3" fill="none" stroke-linecap="round"/>`);
-      case 'star': return pair(x => `<circle cx="${x}" cy="${y}" r="5.5" fill="${INK}"/><path d="M${x + 1} ${y - 4} l1.2 2.6 2.8 .3 -2.1 1.9 .6 2.8 -2.5 -1.5 -2.5 1.5 .6 -2.8 -2.1 -1.9 2.8 -.3z" fill="#fff"/>`);
-      default:     return pair(x => `<circle cx="${x}" cy="${y}" r="4.6" fill="${INK}"/><circle cx="${x + 1.6}" cy="${y - 1.6}" r="1.5" fill="#fff"/>`);
+      case 'arc':  return pair(x => `<path d="M${x - 3.5} ${EY + .5} q3.5 -4 7 0" ${s}/>`);
+      case 'big':  return pair(x => `<circle cx="${x}" cy="${EY}" r="3" fill="${INK}"/><circle cx="${x + 1}" cy="${EY - 1}" r=".9" fill="#fff"/>`);
+      case 'side': return pair(x => `<ellipse cx="${x + 1.6}" cy="${EY}" rx="1.7" ry="2.1" fill="${INK}"/>`);
+      case 'half': return pair(x => `<path d="M${x - 3.5} ${EY} h7" ${s}/><path d="M${x - 2.5} ${EY} q2.5 2.6 5 0" fill="${INK}"/>`);
+      case 'x':    return pair(x => `<path d="M${x - 2.5} ${EY - 2.5} l5 5 M${x + 2.5} ${EY - 2.5} l-5 5" ${s}/>`);
+      case 'line': return pair(x => `<path d="M${x - 3.5} ${EY + .5} q3.5 2 7 0" ${s}/>`);
+      case 'star': return pair(x => `<ellipse cx="${x}" cy="${EY}" rx="2.2" ry="2.6" fill="${INK}"/><circle cx="${x + .8}" cy="${EY - 1}" r=".9" fill="#fff"/><circle cx="${x - .7}" cy="${EY + .8}" r=".45" fill="#fff"/>`);
+      default:     return pair(x => `<ellipse cx="${x}" cy="${EY}" rx="1.8" ry="2.2" fill="${INK}"/>`);
     }
   }
-
-  function mouth(type, y) {
+  function mouth(type) {
+    const s = `stroke="${INK}" stroke-width="1.7" fill="none" stroke-linecap="round"`;
     switch (type) {
-      case 'open':  return `<path d="M52 ${y - 2} q8 12 16 0 z" fill="#d9706f" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>`;
-      case 'frown': return `<path d="M54 ${y + 3} q6 -6 12 0" stroke="${INK}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`;
-      case 'wave':  return `<path d="M52 ${y} q2 -3 4 0 t4 0 t4 0 t4 0" stroke="${INK}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
-      case 'o':     return `<ellipse cx="60" cy="${y + 1}" rx="4" ry="5" fill="#d9706f" stroke="${INK}" stroke-width="2"/>`;
-      case 'flat':  return `<path d="M55 ${y} h10" stroke="${INK}" stroke-width="2.6" stroke-linecap="round"/>`;
-      case 'grit':  return `<rect x="52" y="${y - 3}" width="16" height="7" rx="2" fill="#fff" stroke="${INK}" stroke-width="2"/><path d="M57 ${y - 3} v7 M63 ${y - 3} v7" stroke="${INK}" stroke-width="1.4"/>`;
-      case 'smirk': return `<path d="M54 ${y + 1} q8 4 13 -3" stroke="${INK}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`;
-      default:      return `<path d="M54 ${y - 1} q6 6 12 0" stroke="${INK}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`;
+      case 'open':  return `<path d="M55.5 ${MY - 1} q4.5 6 9 0 z" fill="#b8665a" stroke="${INK}" stroke-width="1.4" stroke-linejoin="round"/>`;
+      case 'frown': return `<path d="M56.5 ${MY + 1.5} q3.5 -3 7 0" ${s}/>`;
+      case 'wave':  return `<path d="M55 ${MY} q1.25 -1.6 2.5 0 t2.5 0 t2.5 0 t2.5 0" ${s}/>`;
+      case 'o':     return `<ellipse cx="60" cy="${MY}" rx="2.2" ry="2.8" fill="#b8665a" stroke="${INK}" stroke-width="1.3"/>`;
+      case 'flat':  return `<path d="M57 ${MY} h6" ${s}/>`;
+      case 'smirk': return `<path d="M56.5 ${MY} q4 2.4 7.5 -1.6" ${s}/>`;
+      default:      return `<path d="M56.5 ${MY - .5} q3.5 3 7 0" ${s}/>`;
     }
   }
-
-  function brows(type, y) {
-    if (type === 'sad') return `<path d="M40 ${y} l10 -3 M80 ${y} l-10 -3" stroke="${INK}" stroke-width="2.6" stroke-linecap="round"/>`;
-    if (type === 'angry') return `<path d="M39 ${y - 4} l11 4 M81 ${y - 4} l-11 4" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>`;
-    return '';
+  function brows(type, who) {
+    const s = `stroke="${INK}" stroke-width="1.4" stroke-linecap="round" fill="none" opacity=".75"`;
+    if (type === 'sad') return `<path d="M47 56 l7 -1.6 M73 56 l-7 -1.6" ${s}/>`;
+    if (type === 'angry') return `<path d="M47 53.5 l7 2.4 M73 53.5 l-7 2.4" ${s}/>`;
+    if (type === 'up') return `<path d="M47.5 54 q3.5 -2.4 7 -.6 M72.5 54 q-3.5 -2.4 -7 -.6" ${s}/>`;
+    // 大人平常就有淡淡的眉毛
+    return who === 'kid' ? '' : `<path d="M47.5 55.5 q3.5 -1.6 7 -.4 M72.5 55.5 q-3.5 -1.6 -7 -.4" ${s}/>`;
   }
-
   function extra(type) {
     switch (type) {
-      case 'tears': return `<path d="M42 72 q-3 8 0 12 q3 -4 0 -12z M78 72 q-3 8 0 12 q3 -4 0 -12z" fill="#9fd3f0"/>`;
-      case 'sweat': return `<path d="M92 40 q-5 8 0 11 q5 -3 0 -11z" fill="#9fd3f0" stroke="#7bb8db" stroke-width="1"/>`;
-      case 'vein':  return `<path d="M86 30 l4 4 m0 -4 l-4 4 M92 26 l4 4 m0 -4 l-4 4" stroke="#e0565b" stroke-width="2.5" stroke-linecap="round"/>`;
-      case 'stars': return `<text x="16" y="28" font-size="14">⭐</text><text x="88" y="22" font-size="12">✨</text>`;
-      case 'zzz':   return `<text x="88" y="26" font-size="14" fill="#8a7fb0" font-weight="700">z z</text>`;
-      case 'bigblush': return `<ellipse cx="40" cy="74" rx="9" ry="5" fill="${BLUSH}" opacity=".8"/><ellipse cx="80" cy="74" rx="9" ry="5" fill="${BLUSH}" opacity=".8"/>`;
+      case 'tears': return `<path d="M49 67 q-2 5 0 7 q2 -2 0 -7z M71 67 q-2 5 0 7 q2 -2 0 -7z" fill="#8fb6c9"/>`;
+      case 'sweat': return `<path d="M84 44 q-3.5 5 0 7 q3.5 -2 0 -7z" fill="#a9c3cf"/>`;
+      case 'vein':  return `<path d="M80 38 l3 3 m0 -3 l-3 3" stroke="#c4775a" stroke-width="1.8" stroke-linecap="round"/>`;
+      case 'stars': return `<text x="22" y="34" font-size="11" fill="#c99a47">✦</text><text x="90" y="30" font-size="9" fill="#c99a47">✦</text>`;
+      case 'zzz':   return `<text x="84" y="34" font-size="11" fill="#7a6f66" font-family="serif" font-style="italic">z z</text>`;
+      case 'bigblush': return `<ellipse cx="46" cy="70" rx="5.5" ry="2.8" fill="${BLUSH}" opacity=".55"/><ellipse cx="74" cy="70" rx="5.5" ry="2.8" fill="${BLUSH}" opacity=".55"/>`;
       default: return '';
     }
   }
-
   function hairBack(who, c) {
-    if (who === 'mom') return `<path d="M18 62 q0 -46 42 -46 q42 0 42 46 v30 q-6 10 -16 6 v-30 h-52 v30 q-10 4 -16 -6z" fill="${c.hair}"/>`;
+    // 媽媽：及肩鮑伯頭，後面的頭髮蓋到下巴下面
+    if (who === 'mom') return `<path d="M33 60 q0 -32 27 -32 q27 0 27 32 l2 26 q-6 4 -12 2 l-2 -20 h-30 l-2 20 q-6 2 -12 -2z" fill="${c.hair}"/>`;
     return '';
   }
-
   function hairFront(who, c) {
     if (who === 'mom') return `
-      <path d="M18 60 q2 -44 42 -44 q40 0 42 44 q-14 -4 -26 -20 q-10 16 -40 16 q-10 0 -18 4z" fill="${c.hair}"/>
-      <circle cx="21" cy="78" r="3" fill="#fff" stroke="#e8d6c8"/>`;
+      <path d="M35 58 q1 -27 25 -27 q22 0 25 22 q-14 -2 -22 -12 q-6 12 -28 17z" fill="${c.hair}"/>
+      <circle cx="36.5" cy="71" r="1.6" fill="#e9dcc3"/>`;
     if (who === 'kid') return `
-      <path d="M20 60 q-2 -42 40 -44 q42 2 40 44 q-8 -10 -14 -12 l-4 8 -6 -12 -8 9 -6 -12 -8 11 -6 -10 -8 10 q-12 4 -20 18z" fill="${c.hair}"/>
-      <path d="M58 16 q4 -12 14 -10 q-8 4 -8 12z" fill="${c.hair}"/>`;
+      <path d="M36 58 q-1 -26 24 -27 q25 1 24 27 q-5 -9 -11 -11 q-8 5 -22 3 q-9 1 -15 8z" fill="${c.hair}"/>
+      <path d="M58 31 q3 -6 9 -5 q-5 2 -5 6z" fill="${c.hair}"/>`;
     if (who === 'dad') return `
-      <path d="M20 58 q0 -40 40 -40 q40 0 40 40 q-10 -14 -40 -16 q-28 0 -40 16z" fill="${c.hair}"/>
-      <circle cx="46" cy="64" r="10" fill="none" stroke="${INK}" stroke-width="2.4"/>
-      <circle cx="74" cy="64" r="10" fill="none" stroke="${INK}" stroke-width="2.4"/>
-      <path d="M56 63 h8" stroke="${INK}" stroke-width="2.4"/>
-      <path d="M44 88 q16 10 32 0" stroke="#b9a59c" stroke-width="1.5" stroke-dasharray="1 3" fill="none"/>`;
+      <path d="M36 56 q0 -24 24 -24 q24 0 24 24 q-7 -10 -24 -11 q-17 1 -24 11z" fill="${c.hair}"/>
+      <rect x="44.5" y="58.5" width="13" height="9" rx="3" fill="none" stroke="${INK}" stroke-width="1.5"/>
+      <rect x="62.5" y="58.5" width="13" height="9" rx="3" fill="none" stroke="${INK}" stroke-width="1.5"/>
+      <path d="M57.5 62 h5" stroke="${INK}" stroke-width="1.5"/>`;
     return '';
   }
-
   function body(who, c) {
-    const w = who === 'dad' ? 80 : who === 'kid' ? 58 : 66;
-    const x = 60 - w / 2;
-    let deco = '';
-    if (who === 'kid' && c.uniform) deco = `<path d="M50 112 l10 10 10 -10" stroke="#3d4f8a" stroke-width="4" fill="none" stroke-linecap="round"/><rect x="57" y="120" width="6" height="20" rx="2" fill="#3d4f8a"/>`;
-    else if (who === 'kid') deco = `<circle cx="60" cy="132" r="7" fill="${c.accent}" stroke="#b9c24c" stroke-width="1.5"/><path d="M54 130 q6 4 12 0" stroke="#fff" stroke-width="1.5" fill="none"/>`;
-    if (who === 'mom') deco = `<path d="M50 112 l10 10 10 -10" stroke="${c.accent}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
-    if (who === 'dad') deco = `<path d="M52 112 l8 8 8 -8" stroke="${c.accent}" stroke-width="3" fill="none"/><rect x="58" y="120" width="4" height="22" fill="${c.accent}"/>`;
-    return `<path d="M${x} 160 v-30 q0 -24 ${w / 2} -24 q${w / 2} 0 ${w / 2} 24 v30z" fill="${c.shirt}" stroke="${INK}" stroke-width="2.4" stroke-opacity=".25"/>${deco}`;
+    if (who === 'mom') return `
+      <path d="M26 160 C26 120 38 102 60 102 C82 102 94 120 94 160Z" fill="${c.outer}"/>
+      <path d="M48 104 L60 128 L72 104 C70 103 66 102 60 102 C54 102 50 103 48 104Z" fill="${c.shirt}"/>
+      <path d="M48 104 L60 128 L60 160 L52 160 Z M72 104 L60 128 L60 160 L68 160 Z" fill="${c.shirt}" opacity=".0"/>
+      <path d="M53 108 L60 124 L67 108" stroke="${c.shirt}" stroke-width="10" fill="none" stroke-linejoin="round" opacity=".95"/>
+      <circle cx="60" cy="118" r="1.6" fill="${c.accent}"/>`;
+    if (who === 'dad') return `
+      <path d="M22 160 C22 118 36 100 60 100 C84 100 98 118 98 160Z" fill="${c.shirt}"/>
+      <path d="M50 102 L60 112 L70 102" stroke="${c.accent}" stroke-width="4" fill="none" stroke-linejoin="round"/>`;
+    // 孩子
+    const deco = c.uniform
+      ? `<path d="M52 108 L60 116 L68 108" stroke="#d9d2c4" stroke-width="3" fill="none" stroke-linejoin="round"/><path d="M58.5 116 h3 l1.2 22 -2.7 3 -2.7 -3z" fill="#3e4a5c"/>`
+      : `<path d="M52 108 q8 6 16 0" stroke="${INK}" stroke-opacity=".25" stroke-width="1.4" fill="none"/>`;
+    return `<path d="M32 160 C32 124 42 106 60 106 C78 106 88 124 88 160Z" fill="${c.shirt}"/>${deco}`;
   }
 
   MD.art = {
     char(who, expr) {
       const c = who === 'kid' ? kidLook() : (CHAR[who] || CHAR.kid);
       const e = EXPR[expr] || EXPR.normal;
-      const eyeY = who === 'dad' ? 64 : 64;
       return `<svg viewBox="0 0 120 160" class="char-svg" aria-hidden="true">
         ${body(who, c)}
+        <rect x="54" y="84" width="12" height="20" rx="5" fill="${SKIN}"/>
+        <path d="M54 98 q6 4 12 0" stroke="#d9bfab" stroke-width="1.2" fill="none"/>
         ${hairBack(who, c)}
-        <circle cx="60" cy="64" r="40" fill="${SKIN}"/>
-        <ellipse cx="38" cy="76" rx="7" ry="4" fill="${BLUSH}" opacity=".55"/>
-        <ellipse cx="82" cy="76" rx="7" ry="4" fill="${BLUSH}" opacity=".55"/>
-        ${eyes(e.eyes, eyeY)}
-        ${brows(e.brows, eyeY - 12)}
-        ${mouth(e.mouth, 84)}
+        <ellipse cx="60" cy="61" rx="24" ry="27" fill="${SKIN}"/>
+        <ellipse cx="46" cy="70" rx="4.5" ry="2.4" fill="${BLUSH}" opacity=".28"/>
+        <ellipse cx="74" cy="70" rx="4.5" ry="2.4" fill="${BLUSH}" opacity=".28"/>
+        ${eyes(e.eyes)}
+        ${brows(e.brows, who)}
+        ${who !== 'kid' ? `<path d="M60 66 q-1.6 3.6 .6 4.4" stroke="#c9a892" stroke-width="1.2" fill="none" stroke-linecap="round"/>` : ''}
+        ${mouth(e.mouth)}
         ${hairFront(who, c)}
         ${extra(e.extra)}
       </svg>`;
@@ -159,12 +166,12 @@ window.MD = window.MD || {};
       const wall = p.color;
       const roof = p.roof;
       return `<svg viewBox="0 0 80 70" class="bld-svg">
-        <ellipse cx="40" cy="66" rx="34" ry="4" fill="#000" opacity=".07"/>
-        <rect x="10" y="28" width="60" height="38" rx="6" fill="${wall}" stroke="${INK}" stroke-opacity=".18" stroke-width="2"/>
-        <path d="M4 32 L40 6 L76 32 Z" fill="${roof}" stroke="${INK}" stroke-opacity=".18" stroke-width="2" stroke-linejoin="round"/>
-        <rect x="32" y="44" width="16" height="22" rx="7" fill="#fff" opacity=".85"/>
-        <rect x="15" y="38" width="12" height="10" rx="3" fill="#fff" opacity=".7"/>
-        <rect x="53" y="38" width="12" height="10" rx="3" fill="#fff" opacity=".7"/>
+        <ellipse cx="40" cy="67" rx="32" ry="3" fill="#3a322d" opacity=".08"/>
+        <rect x="12" y="30" width="56" height="36" rx="2" fill="${wall}" stroke="${INK}" stroke-opacity=".45" stroke-width="1.2"/>
+        <path d="M8 32 L40 10 L72 32 Z" fill="${roof}" stroke="${INK}" stroke-opacity=".45" stroke-width="1.2" stroke-linejoin="round"/>
+        <rect x="34" y="46" width="12" height="20" rx="1" fill="#fbf8f2" stroke="${INK}" stroke-opacity=".35" stroke-width="1"/>
+        <rect x="18" y="40" width="10" height="9" rx="1" fill="#fbf8f2" stroke="${INK}" stroke-opacity=".3" stroke-width="1"/>
+        <rect x="52" y="40" width="10" height="9" rx="1" fill="#fbf8f2" stroke="${INK}" stroke-opacity=".3" stroke-width="1"/>
       </svg>`;
     },
 
@@ -274,7 +281,7 @@ window.MD = window.MD || {};
 
     /* 綿：一團軟軟的棉花 */
     mian(size = 24) {
-      return `<svg viewBox="0 0 40 34" width="${size}" height="${size * .85}" class="mian-svg"><g fill="#fff" stroke="#f0bccb" stroke-width="2"><circle cx="13" cy="20" r="9"/><circle cx="27" cy="20" r="9"/><circle cx="20" cy="13" r="10"/></g><path d="M11 21 q9 7 18 0" fill="#fff"/><circle cx="16" cy="16" r="1.6" fill="#5a4440"/><circle cx="24" cy="16" r="1.6" fill="#5a4440"/><ellipse cx="13" cy="20" rx="2.4" ry="1.4" fill="#f6a9b8" opacity=".7"/><ellipse cx="27" cy="20" rx="2.4" ry="1.4" fill="#f6a9b8" opacity=".7"/></svg>`;
+      return `<svg viewBox="0 0 40 34" width="${size}" height="${size * .85}" class="mian-svg"><g fill="#fbf8f2" stroke="#cdbba5" stroke-width="1.6"><circle cx="13" cy="20" r="9"/><circle cx="27" cy="20" r="9"/><circle cx="20" cy="13" r="10"/></g><path d="M11 21 q9 7 18 0" fill="#fbf8f2"/><circle cx="16" cy="16" r="1.6" fill="#5a4440"/><circle cx="24" cy="16" r="1.6" fill="#5a4440"/><ellipse cx="13" cy="20" rx="2.4" ry="1.4" fill="#e2a48e" opacity=".45"/><ellipse cx="27" cy="20" rx="2.4" ry="1.4" fill="#e2a48e" opacity=".45"/></svg>`;
     },
 
     /* 首頁：媽媽和孩子牽著手 */

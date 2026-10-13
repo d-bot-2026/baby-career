@@ -43,7 +43,7 @@ window.MD = window.MD || {};
     const r = field.getBoundingClientRect();
     for (let i = 0; i < n; i++) {
       const h = document.createElement('div');
-      h.className = 'heart'; h.textContent = pick(['💗', '💖', '✨', '💕']);
+      h.className = 'heart'; h.textContent = pick(['♡', '✦', '♡', '·']);
       h.style.left = ((x ?? r.width / 2) + rand(-60, 60)) + 'px';
       h.style.top = ((y ?? r.height / 2) + rand(-20, 30)) + 'px';
       h.style.setProperty('--rot', rand(-30, 30) + 'deg');

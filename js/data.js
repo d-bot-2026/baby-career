@@ -20,21 +20,21 @@ MD.GRADE_NAMES = ['', '國小一年級', '國小二年級', '國小三年級', '
 
 /* ── 地點（地圖上的建築）── 5 列 × 3 欄，家在正中間。opens：哪個階段開放 */
 MD.PLACES = {
-  market:     { name: '傳統市場', icon: '🧺', pos: [18, 9],  color: '#ffd3b0', roof: '#ff8a65' },
-  pool:       { name: '游泳池',   icon: '🏊', pos: [50, 9],  color: '#c4e6ff', roof: '#6cb8ff', opens: 'mid' },
-  cafe:       { name: '咖啡店',   icon: '☕', pos: [82, 9],  color: '#ffe0c7', roof: '#d9926a' },
-  library:    { name: '圖書館',   icon: '📚', pos: [18, 28], color: '#e2d6ff', roof: '#a88bff', opens: 'mid' },
-  park:       { name: '公園',     icon: '🌳', pos: [50, 28], color: '#cff5d8', roof: '#4fcf8c' },
-  bookstore:  { name: '書店',     icon: '📖', pos: [82, 28], color: '#ffe3ef', roof: '#f78fb3', opens: 'high' },
-  school:     { name: '小學',     icon: '🏫', pos: [18, 47], color: '#fff1a8', roof: '#ffc93c' },
-  home:       { name: '家',       icon: '🏠', pos: [50, 47], color: '#ffe1ee', roof: '#ff6fa5' },
-  tennis:     { name: '網球場',   icon: '🎾', pos: [82, 47], color: '#d4f7e3', roof: '#2ec4a0' },
-  art:        { name: '畫畫教室', icon: '🎨', pos: [18, 66], color: '#ffd9ec', roof: '#ff7eb6', opens: 'mid' },
-  cram:       { name: '補習班',   icon: '✏️', pos: [50, 66], color: '#e8eaff', roof: '#7c8cff', opens: 'jh' },
-  clinic:     { name: '診所',     icon: '🩺', pos: [82, 66], color: '#e6fbff', roof: '#5ccfe6' },
-  grandma:    { name: '阿嬤家',   icon: '🏮', pos: [18, 85], color: '#ffd6cc', roof: '#ff7a6b' },
-  nightmarket:{ name: '夜市',     icon: '🏮', pos: [50, 85], color: '#fff0c9', roof: '#ff9f43', opens: 'high' },
-  beach:      { name: '海邊',     icon: '🐚', pos: [82, 85], color: '#fff3c4', roof: '#ffb84d', opens: 'high' },
+  market:     { name: '傳統市場', icon: '🧺', pos: [18, 9],  color: '#eadfcd', roof: '#c4775a' },
+  pool:       { name: '游泳池',   icon: '🏊', pos: [50, 9],  color: '#dde2e6', roof: '#5a6577', opens: 'mid' },
+  cafe:       { name: '咖啡店',   icon: '☕', pos: [82, 9],  color: '#efe6d8', roof: '#9c7b5f' },
+  library:    { name: '圖書館',   icon: '📚', pos: [18, 28], color: '#e4e1d8', roof: '#5a6577', opens: 'mid' },
+  park:       { name: '公園',     icon: '🌳', pos: [50, 28], color: '#dfe5d8', roof: '#8a9a7b' },
+  bookstore:  { name: '書店',     icon: '📖', pos: [82, 28], color: '#efe6d8', roof: '#b98a80', opens: 'high' },
+  school:     { name: '小學',     icon: '🏫', pos: [18, 47], color: '#eadfcd', roof: '#c99a47' },
+  home:       { name: '家',       icon: '🏠', pos: [50, 47], color: '#f3ebdf', roof: '#b5654a' },
+  tennis:     { name: '網球場',   icon: '🎾', pos: [82, 47], color: '#dfe5d8', roof: '#7f9a8a' },
+  art:        { name: '畫畫教室', icon: '🎨', pos: [18, 66], color: '#e4e1d8', roof: '#b98a80', opens: 'mid' },
+  cram:       { name: '補習班',   icon: '✏️', pos: [50, 66], color: '#dde2e6', roof: '#6b7a8f', opens: 'jh' },
+  clinic:     { name: '診所',     icon: '🩺', pos: [82, 66], color: '#e0e7e8', roof: '#7c9aa3' },
+  grandma:    { name: '阿嬤家',   icon: '🏮', pos: [18, 85], color: '#eadfcd', roof: '#a8694f' },
+  nightmarket:{ name: '夜市',     icon: '🏮', pos: [50, 85], color: '#efe6d8', roof: '#c99a47', opens: 'high' },
+  beach:      { name: '海邊',     icon: '🐚', pos: [82, 85], color: '#ece3cf', roof: '#c9a26b', opens: 'high' },
 };
 MD.PLACES.nightmarket.icon = '🎡';
 
@@ -153,7 +153,7 @@ MD.INGREDIENTS = {
   salmon:     { name: '鮭魚',   icon: '🍣' },
 };
 
-MD.NUT = { c: { name: '澱粉', color: '#ffc93c' }, p: { name: '蛋白質', color: '#ff6f91' }, v: { name: '蔬菜', color: '#2ec4a0' } };
+MD.NUT = { c: { name: '澱粉', color: '#c99a47' }, p: { name: '蛋白質', color: '#c4775a' }, v: { name: '蔬菜', color: '#8a9a7b' } };
 
 MD.WEEKDAYS = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日'];
 MD.WEATHER = ['☀️', '⛅', '☀️', '🌤️', '☀️', '⛅', '☀️'];
