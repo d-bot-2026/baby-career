@@ -119,16 +119,11 @@ MD.DISHES = {
   ratatouille:{ name: '普羅旺斯燉菜', unit: '盤', icon: '🍆', meal: 'm', nut: 'v',  like: 'veg',  ing: ['🍆', '🍅', '🧅'], stage: 'high' },
   salmon:     { name: '香煎鮭魚排', unit: '塊', icon: '🍣', meal: 'm', nut: 'p',   like: 'love', ing: ['🍣', '🍋', '🧈'], from: 'salmon' },
 
-  banana:     { name: '香蕉',       unit: '根', icon: '🍌', meal: 's', nut: 'c',   like: 'ok',   ing: ['🍌'] },
-  jidangao:   { name: '雞蛋糕',     unit: '包', icon: '🧁', meal: 's', nut: 'cp',  like: 'love', ing: ['🥚', '🌾'] },
-  yogurt:     { name: '草莓優格',   unit: '杯', icon: '🍓', meal: 's', nut: 'pv',  like: 'love', ing: ['🍓', '🥛'], from: 'strawberry' },
-  crepe:      { name: '可麗餅',     unit: '片', icon: '🥞', meal: 's', nut: 'c',   like: 'love', ing: ['🥞', '🍯'], from: 'flour' },
-  douhua:     { name: '花生豆花',   unit: '碗', icon: '🍨', meal: 's', nut: 'p',   like: 'love', ing: ['⬜', '🥜'], from: 'tofu' },
-  bubbletea:  { name: '珍珠奶茶',   unit: '杯', icon: '🧋', meal: 's', nut: 'c',   like: 'love', ing: ['🧋', '⚫'], stage: 'high' },
-  macaron:    { name: '馬卡龍',     unit: '顆', icon: '🍬', meal: 's', nut: 'c',   like: 'love', ing: ['🥚', '🍬'], stage: 'jh' },
-  yamballs:   { name: '地瓜球',     unit: '包', icon: '🟠', meal: 's', nut: 'c',   like: 'love', ing: ['🍠', '🌾'], from: 'yam' },
-  fruitplate: { name: '水果切盤',   unit: '盤', icon: '🍉', meal: 's', nut: 'v',   like: 'ok',   ing: ['🍉', '🍎', '🍇'] },
-  pudding:    { name: '雞蛋布丁',   unit: '個', icon: '🍮', meal: 's', nut: 'p',   like: 'love', ing: ['🥚', '🥛', '🍯'], stage: 'mid' },
+  banana:     { name: '香蕉',       unit: '根', icon: '🍌', meal: 'b', nut: 'c',   like: 'ok',   ing: ['🍌'] },
+  jidangao:   { name: '雞蛋糕',     unit: '包', icon: '🧁', meal: 'b', nut: 'cp',  like: 'love', ing: ['🥚', '🌾'] },
+  yogurt:     { name: '草莓優格',   unit: '杯', icon: '🍓', meal: 'b', nut: 'pv',  like: 'love', ing: ['🍓', '🥛'], from: 'strawberry' },
+  crepe:      { name: '可麗餅',     unit: '片', icon: '🥞', meal: 'b', nut: 'c',   like: 'love', ing: ['🥞', '🍯'], from: 'flour' },
+  fruitplate: { name: '水果切盤',   unit: '盤', icon: '🍉', meal: 'b', nut: 'v',   like: 'ok',   ing: ['🍉', '🍎', '🍇'] },
 };
 
 MD.INGREDIENTS = {
@@ -162,15 +157,16 @@ MD.WEATHER = ['☀️', '⛅', '☀️', '🌤️', '☀️', '⛅', '☀️'];
 MD.SLOTS = {
   breakfast: { name: '早餐', icon: '🌅', meal: 'b' },
   lunch:     { name: '午餐', icon: '🍽️', meal: 'm' },
-  snack:     { name: '點心', icon: '🧁', meal: 's' },
   dinner:    { name: '晚餐', icon: '🍲', meal: 'm' },
   morning:   { name: '上午', icon: '☀️' },
   day:       { name: '上課', icon: '🏫' },
-  pm1:       { name: '下午一', icon: '🌤️' },
-  pm2:       { name: '下午二', icon: '⛅' },
+  pm1:       { name: '下午', icon: '🌤️' },
   evening:   { name: '傍晚', icon: '🌇' },
   night:     { name: '晚上', icon: '🌙' },
 };
+
+/* 一天結束時，冰箱上多了什麼（孩子長大，留下的東西也不一樣） */
+MD.FRIDGE_LABEL = { low: '冰箱上的新畫', mid: '冰箱上的新畫', high: '冰箱上的新作品', jh: '冰箱上多了一張' };
 
 /* 不用上學的日子 */
 MD.HOLIDAYS = ['校慶補假 🎉', '教師研習 📋', '颱風假 🌀', '運動會補假 🏃'];
@@ -185,7 +181,6 @@ MD.WISHES = [
   { type: 'dish', id: 'onigiri',      line: '我要飯糰。一樣的那種。', stages: ['low', 'mid'] },
   { type: 'dish', id: 'crepe',        line: '我想吃可麗餅！法國的那個！' },
   { type: 'dish', id: 'dumplings',    line: '可以吃水餃嗎？我想數有幾顆。', stages: ['mid', 'high'] },
-  { type: 'dish', id: 'bubbletea',    line: '今天可以喝珍奶嗎？半糖就好。', stages: ['high', 'jh'] },
   { type: 'dish', id: 'sukiyaki',     line: '好想吃壽喜燒，蛋要沾很多。', stages: ['high', 'jh'] },
   { type: 'dish', id: 'potnoodle',    line: '媽，晚餐可以吃鍋燒意麵嗎？', stages: ['jh'] },
   { type: 'card', id: 'park',         line: '我想去公園看螞蟻。', stages: ['low', 'mid'] },
@@ -203,24 +198,70 @@ MD.WISHES = [
   { type: 'card', id: 'tennis',       line: '下禮拜有比賽，我想多練一下。', stages: ['jh'] },
 ];
 
-/* 造型便當 */
-MD.BENTO_THEMES = [
-  { id: 'panda',  name: '熊貓', icon: '🐼', need: ['nori', 'nori', 'nori'] },
-  { id: 'chick',  name: '小雞', icon: '🐥', need: ['egg', 'carrot', 'nori'] },
-  { id: 'bear',   name: '小熊', icon: '🐻', need: ['sausage', 'sausage', 'nori'] },
-  { id: 'tennis', name: '網球', icon: '🎾', need: ['egg', 'cheese'] },
-  { id: 'heart',  name: '愛心', icon: '💗', need: ['ham', 'tomato'] },
-  { id: 'dino',   name: '暴龍', icon: '🦖', need: ['broccoli', 'broccoli', 'nori'] },
-];
-MD.BENTO_DECOS = {
-  nori:     { name: '海苔',     icon: '⚫' },
-  egg:      { name: '蛋皮',     icon: '🟡' },
-  carrot:   { name: '紅蘿蔔',   icon: '🥕' },
-  sausage:  { name: '章魚香腸', icon: '🐙' },
-  cheese:   { name: '起司',     icon: '🧀' },
-  ham:      { name: '火腿愛心', icon: '💗' },
-  tomato:   { name: '小番茄',   icon: '🍅' },
-  broccoli: { name: '花椰菜',   icon: '🥦' },
+/* 便當：看明天的狀況來裝
+ * tags：big 份量多、easy 用手拿著吃、love 他最愛、saucy 有醬汁、spoil 天熱容易壞、sneaky 青菜藏起來、cute 很可愛
+ * conds：明天的狀況。slot = 主要靠哪一格解決；good = 哪個選項符合；check = 整個便當有沒有做到
+ */
+MD.tag = (o, t) => !!(o.tags && o.tags.includes(t));
+MD.BENTO = {
+  base: [
+    { id: 'rice',     name: '白飯（大碗）', icon: '🍚', nut: 'c',  tags: ['big'] },
+    { id: 'onigiri',  name: '飯糰',         icon: '🍙', nut: 'c',  tags: ['easy', 'love'] },
+    { id: 'sandwich', name: '蛋沙拉三明治', icon: '🥪', nut: 'cp', tags: ['easy', 'spoil'] },
+    { id: 'noodle',   name: '炒麵',         icon: '🍝', nut: 'c',  tags: ['big'] },
+    { id: 'wrap',     name: '蛋餅捲',       icon: '🌯', nut: 'cp', tags: ['easy'] },
+  ],
+  main: [
+    { id: 'karaage',  name: '炸雞塊',   icon: '🍗', nut: 'p',  tags: ['love', 'easy'] },
+    { id: 'salmon',   name: '煎鮭魚',   icon: '🐟', nut: 'p',  tags: [] },
+    { id: 'shrimp',   name: '炸蝦',     icon: '🍤', nut: 'p',  tags: ['spoil', 'love'] },
+    { id: 'curry',    name: '咖哩',     icon: '🍛', nut: 'cpv', tags: ['saucy', 'big'] },
+    { id: 'porkchop', name: '滷排骨',   icon: '🥩', nut: 'p',  tags: ['big', 'saucy'] },
+    { id: 'meatball', name: '照燒肉丸', icon: '🧆', nut: 'p',  tags: ['easy'] },
+  ],
+  side: [
+    { id: 'tamago',   name: '玉子燒',       icon: '🍳', nut: 'p',  tags: ['love'] },
+    { id: 'spinegg',  name: '菠菜玉子燒',   icon: '🥬', nut: 'pv', tags: ['sneaky'] },
+    { id: 'broccoli', name: '燙青花菜',     icon: '🥦', nut: 'v',  tags: [] },
+    { id: 'tomato',   name: '小番茄',       icon: '🍅', nut: 'v',  tags: ['easy'] },
+    { id: 'octopus',  name: '章魚香腸',     icon: '🐙', nut: 'p',  tags: ['cute', 'love'] },
+    { id: 'potato',   name: '馬鈴薯沙拉',   icon: '🥔', nut: 'cv', tags: ['spoil'] },
+    { id: 'cucumber', name: '涼拌小黃瓜',   icon: '🥒', nut: 'v',  tags: [] },
+    { id: 'corn',     name: '奶油玉米',     icon: '🌽', nut: 'cv', tags: ['love'] },
+  ],
+  conds: [
+    { id: 'trip', stages: ['low', 'mid', 'high'], slot: 'base',
+      note: '校外教學，要坐在草地上吃。', hint: '目標：主食要能用手拿著吃', kid: '明天要去校外教學！要坐在草地上吃便當！',
+      good: o => MD.tag(o, 'easy'), check: it => MD.tag(it[0], 'easy'), tip: '草地上不好用筷子，下次試試用手拿的主食。',
+      yes: '在草地上吃飯糰剛剛好！老師說好羨慕。', no: '在草地上用筷子好難，飯掉了一點點。' },
+    { id: 'pe', slot: 'base',
+      note: '有體育課，一定會很餓。', hint: '目標：份量要夠多', kid: '明天有體育課，要跑八百公尺……',
+      good: o => MD.tag(o, 'big'), check: it => it.some(o => MD.tag(o, 'big')), tip: '跑完步會很餓，下次裝份量多一點的。',
+      yes: '跑了八百公尺，還好便當很多。全部吃光光！', no: '體育課後好餓……便當一下就吃完了。',
+      jh: { yes: '練完球，便當很夠。……謝啦。', no: '練完球好餓，跟同學借了一包餅乾。' } },
+    { id: 'exam', stages: ['mid', 'high', 'jh'], slot: 'main',
+      note: '要考試，他有點緊張。', hint: '目標：放一樣他最愛的', kid: '明天要考試……我有一點緊張。',
+      good: o => MD.tag(o, 'love'), check: it => it.some(o => MD.tag(o, 'love')), tip: '緊張的時候，吃到最愛的東西會安心一點。',
+      yes: '中午吃到最喜歡的，下午考試好像比較會了。', no: '便當很好吃。可是考試前我比較想吃炸雞。',
+      jh: { yes: '中午吃到喜歡的，考完覺得還可以。', no: '考試……還好啦。便當有吃完。' } },
+    { id: 'hot', slot: 'side',
+      note: '很熱，便當要在教室放一個上午。', hint: '目標：不放天熱容易壞的（美乃滋、海鮮）', kid: '明天好像會很熱喔。',
+      good: o => !MD.tag(o, 'spoil'), check: it => !it.some(o => MD.tag(o, 'spoil')), tip: '天熱時，美乃滋和海鮮放一個上午容易壞。',
+      yes: '今天好熱，可是便當還是好好的。', no: '便當有一點點怪怪的味道，我就沒吃完。' },
+    { id: 'noveg', stages: ['low', 'mid', 'high'], slot: 'side',
+      note: '他最近都不肯吃青菜。', hint: '目標：讓他吃到青菜（藏起來也可以）', kid: '我明天不要青菜喔。一根都不要。',
+      good: o => MD.tag(o, 'sneaky'), check: it => it.some(o => MD.tag(o, 'sneaky')) || (it.some(o => o.nut.includes('v')) && it.some(o => MD.tag(o, 'love'))), tip: '把青菜藏在他喜歡的東西裡，比較容易吃下去。',
+      yes: '玉子燒裡面綠綠的是什麼？……算了，好吃。', no: '青菜……我留給便當盒了。' },
+    { id: 'sauce', slot: 'main',
+      note: '他說醬汁跑到飯上，整個便當就「壞掉了」。', hint: '目標：不放有醬汁的菜', kid: '醬汁不可以碰到飯喔。一點點都不行。',
+      good: o => !MD.tag(o, 'saucy'), check: it => !it.some(o => MD.tag(o, 'saucy')), tip: '他很在意食物的界線，有醬汁的菜下次分開裝。',
+      yes: '每一格都乾乾淨淨的。今天的便當很完美。', no: '醬汁跑到飯上了。我還是吃了，可是吃得很慢。',
+      jh: { yes: '便當很整齊。（他沒說什麼，但便當盒洗好才拿出來）', no: '醬汁滲到飯了。……還是有吃完啦。' } },
+    { id: 'cool', stages: ['high', 'jh'], slot: 'side',
+      note: '「不要再放可愛的東西了啦，同學都在看。」', hint: '目標：不要可愛造型', kid: '媽，明天不要放章魚香腸了啦……同學會看。',
+      good: o => !MD.tag(o, 'cute'), check: it => !it.some(o => MD.tag(o, 'cute')), tip: '他長大了，可愛的造型留在回憶裡就好。',
+      yes: '今天的便當很正常。很好。', no: '同學看到章魚香腸了。……沒事啦。' },
+  ],
 };
 
 /* 爸爸做的便當（隔天放學時會有同學的反應） */
@@ -312,7 +353,7 @@ MD.LINES = {
     kidThere: ['媽，你今天看起來很放鬆耶。'],
   },
   jh: {
-    arrive: ['媽，你走慢一點，我跟同學在後面。', '……嗯。走吧。', '媽，我自己去就好啦。……好啦，一起走。', '今天考試，還好。'],
+    arrive: ['媽，你走慢一點，我跟同學在後面。', '……嗯。走吧。', '媽，我自己去就好啦。……好啦，一起走。', '今天考試，還好。', '（戴著耳機，但一邊沒塞）', '媽，你包包給我。', '……你今天穿這樣很好看。（很快地說完）', '我們班有人說他媽很兇。我說我媽還好。'],
     night: ['……晚安。（門關上前小聲說）謝謝。', '媽，你早點睡。', '明天不用叫我，我自己會起來。……還是叫一下好了。', '媽，你以前讀書的時候，壓力也很大嗎？'],
     hungry: ['媽，有什麼可以吃的嗎？什麼都可以。'],
     eatLove: ['……好吃。（又盛了一碗）', '媽，這個可以教我做嗎？'],

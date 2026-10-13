@@ -4,7 +4,7 @@
 window.MD = window.MD || {};
 
 MD.SAVE_KEY = 'baby-career-save';
-MD.SAVE_VERSION = 5;
+MD.SAVE_VERSION = 6;
 
 MD.newState = function () {
   return {
@@ -51,6 +51,12 @@ MD.MIGRATIONS = {
   // v4 → v5：完整版（地圖改成 5 列、國中、新地點）。進行中的那一天重新排
   4: s => {
     if (s.today && !s.today.nightDone) s.today = null;
+    return s;
+  },
+  // v5 → v6：拿掉點心、下午改成「下午／傍晚」兩個行程、便當改成看明天的狀況來裝
+  5: s => {
+    if (s.today && !s.today.nightDone) s.today = null;
+    if (s.nextBento && !s.nextBento.nut && s.nextBento.by !== 'dad') s.nextBento = null;
     return s;
   },
 };

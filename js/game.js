@@ -82,6 +82,7 @@ window.MD = window.MD || {};
   /* ── 狀態 ── */
   function ensureDefaults() {
     const s = MD.state;
+    s.dishes = s.dishes.filter(id => MD.DISHES[id]);   // 拿掉的菜色（舊存檔）
     START_DISHES.forEach(id => { if (!s.dishes.includes(id)) s.dishes.push(id); });
     // 長大一點，就會做新的菜
     Object.entries(MD.DISHES).forEach(([id, d]) => { if (d.stage && MD.stageAtLeast(d.stage) && !s.dishes.includes(id)) s.dishes.push(id); });
@@ -139,18 +140,16 @@ window.MD = window.MD || {};
     const plan = [{ slot: 'breakfast', kind: 'meal' }];
     const jh = MD.stage() === 'jh';
     if (school && jh) {
-      // 國中：白天整天在學校，放學後吃點心，傍晚一個行程，晚餐後還有一個（補習、功課）
+      // 國中：白天整天在學校（中午吃便當），傍晚一個行程，晚餐後還有一個（補習、功課）
       plan.push({ slot: 'day', kind: 'act', card: 'school', fixed: true });
-      plan.push({ slot: 'snack', kind: 'meal' });
       plan.push({ slot: 'evening', kind: 'act' });
       plan.push({ slot: 'dinner', kind: 'meal' });
       plan.push({ slot: 'night', kind: 'act' });
     } else {
+      // 上學日：上午在學校，中午吃前一晚準備的便當；放假：上午的行程結束後，就地吃午餐
       if (school) plan.push({ slot: 'morning', kind: 'act', card: 'school', fixed: true });
       else { plan.push({ slot: 'morning', kind: 'act' }); plan.push({ slot: 'lunch', kind: 'meal' }); }
       plan.push(tennisDay ? { slot: 'pm1', kind: 'act', card: 'tennis', fixed: true } : { slot: 'pm1', kind: 'act' });
-      plan.push({ slot: 'snack', kind: 'meal' });
-      plan.push({ slot: 'pm2', kind: 'act' });
       plan.push({ slot: 'evening', kind: 'act' });
       plan.push({ slot: 'dinner', kind: 'meal' });
     }
@@ -280,7 +279,7 @@ window.MD = window.MD || {};
     const t = MD.state.today, x = t.plan[i];
     if (x.kind === 'act') {
       if (x.card === 'school') {
-        const ok = await MD.ui.confirm(`今天要幫${F('{kid}')}請假嗎？<br><small>上午會空出來，可以排其他行程；午餐改在家吃，便當當晚餐的配菜。</small>`, '請假', '照常上學');
+        const ok = await MD.ui.confirm(`今天要幫${F('{kid}')}請假嗎？<br><small>上午會空出來，可以排其他行程；午餐就在上午去的地方吃。</small>`, '請假', '照常上學');
         if (!ok) return;
         t.leave = true;
         x.card = null; x.fixed = false;
@@ -340,6 +339,8 @@ window.MD = window.MD || {};
 
   /* ════════════════ 地圖 ════════════════ */
   const ROW_ROAD = y => y + 8;
+  // 今天會去的地方：家＋行程裡的地點（午餐就地吃，不另外加）
+  const todayPlaces = () => new Set(['home', ...MD.state.today.plan.filter(x => x.kind === 'act' && x.card).map(x => MD.CARDS[x.card].place)]);
   function renderMap() {
     const s = MD.state, t = s.today;
     const roadsY = [9, 28, 47, 66, 85].map(ROW_ROAD);
@@ -348,7 +349,7 @@ window.MD = window.MD || {};
         ${roadsY.map(y => `<line x1="6" y1="${y}" x2="94" y2="${y}"/>`).join('')}
         <line x1="34" y1="${roadsY[0]}" x2="34" y2="${roadsY[4]}"/><line x1="66" y1="${roadsY[0]}" x2="66" y2="${roadsY[4]}"/>
       </svg>
-      ${Object.entries(MD.PLACES).map(([id, p]) => { const lk = !placeOpen(id); return `
+      ${Object.entries(MD.PLACES).filter(([id]) => todayPlaces().has(id)).map(([id, p]) => { const lk = !placeOpen(id); return `
         <button class="place ${lk ? 'locked' : ''}" data-id="${id}" style="left:${p.pos[0]}%;top:${p.pos[1]}%">
           ${MD.art.badge(id, lk)}${lk ? '<span class="badge-lock">🔒</span>' : ''}
           <span class="place-name">${placeName(id)}</span>
@@ -374,7 +375,7 @@ window.MD = window.MD || {};
     renderMian();
   }
 
-  const itemPlace = x => (x.kind === 'act' ? MD.CARDS[x.card].place : x.slot === 'snack' && MD.state.today.at !== 'cafe' ? MD.state.today.at : 'home');
+  const itemPlace = x => (x.kind === 'act' ? MD.CARDS[x.card].place : x.slot === 'lunch' && MD.state.today.at !== 'cafe' ? MD.state.today.at : 'home');
 
   function updatePin() {
     const t = MD.state.today, x = t.plan[t.idx];
@@ -416,10 +417,12 @@ window.MD = window.MD || {};
     w.classList.toggle('solo', solo);
     const steps = setInterval(() => { if (w.classList.contains('walking') && MD.audio) MD.audio.sfx('step'); }, 330);
     const A = MD.LINES.common.arrive, own = (MD.LINES[MD.stage()] || {}).arrive || [];
-    if (solo) kidBubble(''); else kidBubble(pick(Math.random() < .55 && A[id] ? A[id] : [...own, ...A.any]));
+    // 國中生只說國中生的話；高年級不再說「比賽誰先到」這種話
+    const st = MD.stage(), arrive = st === 'jh' ? own : st === 'high' ? (Math.random() < .5 && A[id] ? A[id] : own) : Math.random() < .55 && A[id] ? A[id] : [...own, ...A.any];
+    if (solo) kidBubble(''); else kidBubble(pick(arrive));
     const map = $('map'), W = map.clientWidth, H = map.clientHeight;
     let cx = x1, cy = y1;
-    const stopAt = !solo && t.idx > 0 && Math.random() < .3 ? 1 : -1;
+    const stopAt = !solo && t.idx > 0 && !MD.stageAtLeast('jh') && Math.random() < (MD.stage() === 'high' ? .15 : .3) ? 1 : -1;
     for (let i = 0; i < pts.length; i++) {
       const [nx, ny] = pts[i];
       const dist = Math.hypot((nx - cx) * W / 100, (ny - cy) * H / 100);
@@ -486,24 +489,14 @@ window.MD = window.MD || {};
 
     if (x.kind === 'meal') {
       const d = MD.DISHES[x.dish];
-      if (x.slot !== 'snack' || t.at === 'cafe') await walkTo('home', !!t.kidAway);
-      if (x.slot === 'dinner' && (MD.DAY_EVENTS[s.day]?.family || Math.random() < .5) && !t.familyDone) {
-        t.familyDone = true;
-        merge(await MD.ACTS.family());
-      }
-      const ctx = { dish: x.dish, today: t, bg: t.at === 'tennis' ? 'court' : t.at === 'home' ? 'kitchen' : t.at === 'cafe' ? 'cafe' : t.at === 'market' ? 'market' : 'park' };
-      const fn = { breakfast: 'breakfast', lunch: 'lunch', snack: 'snack', dinner: 'cook' }[x.slot];
-      merge(await MD.ACTS[fn](ctx));
-      s.kid.full = clamp(s.kid.full + (x.slot === 'snack' ? 1 : x.slot === 'dinner' ? 3 : 2));
+      await walkTo(itemPlace(x), !!t.kidAway);
+      const fn = { breakfast: 'breakfast', lunch: 'lunch', dinner: 'cook' }[x.slot];
+      merge(await MD.ACTS[fn]({ dish: x.dish, today: t, at: t.at }));
+      s.kid.full = clamp(s.kid.full + (x.slot === 'dinner' ? 3 : 2));
       for (const k of d.nut) t.nut[k]++;
-      if (x.slot === 'dinner' && (s.day % 7) < 5 && s.day < 63 && !s.nextBento) {
-        const r = await MD.ACTS.bentoNight({ dish: x.dish, today: t });
-        merge(r);
-        s.nextBento = r.bento;
-      }
     } else {
       const c = MD.CARDS[x.card];
-      if (x.card === 'school' && t.at === 'home' && MD.hasTrait('adhd') && (s.day === 1 || Math.random() < .35)) merge(await MD.ACTS.shoes());
+      if (x.card === 'school' && t.at === 'home' && MD.hasTrait('adhd') && (s.day === 1 || Math.random() < .35)) merge(await MD.ACTS[MD.stage() === 'jh' ? 'forgot' : 'shoes']());
       await walkTo(c.place, x.card === 'cafe' || !!t.kidAway);
       const lv = cardLevel(x.card);
       const fed = s.kid.full >= 2;
@@ -511,9 +504,10 @@ window.MD = window.MD || {};
       if (x.card === 'cafe') t.kidAway = true;   // 媽媽喝完咖啡，自己走到下一站
       s.placeVisits[x.card] = (s.placeVisits[x.card] || 0) + 1;
       (s.placeLast = s.placeLast || {})[x.card] = s.day;
-      if (x.card === 'school' && t.bento && t.bento.dish) {   // 中午吃了便當
+      if (x.card === 'school' && t.bento) {   // 中午吃了便當
         s.kid.full = clamp(s.kid.full + 2);
-        for (const k of MD.DISHES[t.bento.dish].nut) t.nut[k]++;
+        const nut = t.bento.nut || (t.bento.dish && MD.DISHES[t.bento.dish] ? MD.DISHES[t.bento.dish].nut : '');
+        for (const k of nut) t.nut[k]++;
       }
       s.kid.full = clamp(s.kid.full + c.full);
       s.kid.energy = clamp(s.kid.energy + c.energy);
@@ -537,7 +531,32 @@ window.MD = window.MD || {};
     t.idx++;
     MD.save();
     renderStrip(); updatePin(); kidBubble();
-    if (t.idx >= t.plan.length) { await wait(400); await walkTo('home', !!t.kidAway); showNight(); }
+    if (t.idx >= t.plan.length) {
+      await wait(400);
+      await walkTo('home', !!t.kidAway);
+      await eveningAtHome();
+      showNight();
+    }
+  }
+
+  // 一天的最後（晚餐後、在家）：家庭時光 → 準備明天的便當
+  async function eveningAtHome() {
+    const s = MD.state, t = s.today;
+    let m = 0;
+    if (!t.familyDone && (MD.DAY_EVENTS[s.day]?.family || Math.random() < .5)) {
+      t.familyDone = true;
+      const r = await MD.ACTS.family();
+      if (r) { m += r.mian || 0; if (r.memory) t.memories.push(r.memory); if (r.drawing) t.drawings.push(r.drawing); }
+    }
+    if (!t.bentoDone && (s.day % 7) < 5 && s.day < 63 && !s.nextBento) {
+      t.bentoDone = true;
+      const dinner = t.plan.find(x => x.slot === 'dinner');
+      const r = await MD.ACTS.bentoNight({ dish: dinner && dinner.dish, today: t });
+      m += r.mian || 0;
+      s.nextBento = r.bento;
+    }
+    if (m) addMian(m);
+    MD.save();
   }
 
   function openMap() {
@@ -556,7 +575,7 @@ window.MD = window.MD || {};
     const prev = (s.fridge[s.fridge.length - 1] || {}).theme;
     const theme = pick(themes.filter(x => x !== prev)) || 'home';
     const dish = (t.plan.find(x => x.slot === 'dinner') || {}).dish;
-    s.fridge.push({ day: s.day, seed: Math.floor(Math.random() * 1e6), theme, dish: dish && MD.DISHES[dish].icon });
+    s.fridge.push({ day: s.day, seed: Math.floor(Math.random() * 1e6), theme, dish: dish && MD.DISHES[dish].icon, stage: MD.stage() });
     // 營養全齊 → 獎勵
     const balanced = t.nut.c && t.nut.p && t.nut.v;
     if (balanced) { s.mian += 3; t.earned += 3; }
@@ -610,8 +629,8 @@ window.MD = window.MD || {};
         <div class="row"><span>${F('{kid}')}的心願</span><span>${t.wish && t.wish.done ? '達成 ✅' : '明天再試試'}</span></div>
         <div class="row"><span>今天的營養</span><span class="nut-stars big">${['c', 'p', 'v'].map(x => `<i class="${t.nut[x] ? 'on' : ''}" style="--c:${MD.NUT[x].color}">★</i>`).join('')}</span></div>
         ${balanced ? `<div class="row small">三種營養都吃到了，長得特別好（+3）</div>` : `<div class="row small">明天試試看，三種營養都吃到</div>`}
-        <div class="row"><span>冰箱上的新畫</span></div>
-        <div class="fridge-new">${MD.art.drawing(last.theme, last.seed, last.dish)}</div>
+        <div class="row"><span>${MD.FRIDGE_LABEL[last.stage || 'low']}</span></div>
+        <div class="fridge-new">${MD.art.drawing(last.theme, last.seed, last.dish, last.stage)}</div>
       </div>
       <div class="night-btns">
         <button class="btn primary" id="n-home">今天就到這裡 🌙</button>
@@ -758,7 +777,7 @@ window.MD = window.MD || {};
     const s = MD.state;
     $('fridge-body').innerHTML = `
       <div class="doorframe"><div class="frame-wood">${Array.from({ length: s.heightMarks }, (_, i) => `<span class="mark" style="bottom:${20 + i * 14}%"><i></i>${i + 1}</span>`).join('')}</div><small>門框上的身高</small></div>
-      <div class="fridge">${s.fridge.length ? s.fridge.slice().reverse().map((f, i) => `<div class="fridge-art" style="--r:${(i % 2 ? 1 : -1) * (2 + (i % 3))}deg"><span class="magnet" style="--m:${['#f5a9ba', '#9fd3f0', '#f2c94c', '#8ccaae'][i % 4]}"></span>${MD.art.drawing(f.theme, f.seed, f.dish)}<small>Day ${f.day}</small></div>`).join('') : '<p class="empty">冰箱還空空的。</p>'}</div>`;
+      <div class="fridge">${s.fridge.length ? s.fridge.slice().reverse().map((f, i) => `<div class="fridge-art" style="--r:${(i % 2 ? 1 : -1) * (2 + (i % 3))}deg"><span class="magnet" style="--m:${['#f5a9ba', '#9fd3f0', '#f2c94c', '#8ccaae'][i % 4]}"></span>${MD.art.drawing(f.theme, f.seed, f.dish, f.stage || MD.stageOf(MD.gradeOf(f.day)))}<small>Day ${f.day}</small></div>`).join('') : '<p class="empty">冰箱還空空的。</p>'}</div>`;
     show('fridge-screen');
   }
 

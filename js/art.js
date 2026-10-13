@@ -185,14 +185,16 @@ window.MD = window.MD || {};
     },
 
     /* Ethan 的蠟筆畫：每個主題一種場景，再隨機變化天空、位置、文字，每張都不一樣 */
-    drawing(theme, seed = 1, dish) {
+    drawing(theme, seed = 1, dish, stage = 'low') {
+      if (stage === 'jh') return this.teenNote(theme, seed, dish);
+      const ST = stage, LW = { low: 1, mid: .62, high: .5 }[ST] || 1;
       let r = (seed % 233280) + 1;
       const rnd = (a, b) => { r = (r * 9301 + 49297) % 233280; return a + (r / 233280) * (b - a); };
       const pk = arr => arr[Math.floor(rnd(0, arr.length))];
       const j = (n = 3) => rnd(-n, n).toFixed(1);
-      const INK = '#5a4440';
-      const crayon = (d, c, w = 3) => `<path d="${d}" stroke="${c}" stroke-width="${w}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
-      const paper = pk(['#fffef6', '#fff6fb', '#f5fbff', '#fffbe8', '#f8fff4']);
+      const INK = ST === 'high' ? '#3b3b3b' : '#5a4440';
+      const crayon = (d, c, w = 3) => `<path d="${d}" stroke="${c}" stroke-width="${(w * LW).toFixed(2)}" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`;
+      const paper = ST === 'high' ? '#fbfaf6' : ST === 'mid' ? '#fdfdfb' : pk(['#fffef6', '#fff6fb', '#f5fbff', '#fffbe8', '#f8fff4']);
       const ground = pk(['#8fcf8f', '#a5d99a', '#c9a27a', '#9ad1c4']);
 
       // 火柴人：x 位置、身高、頭髮色、衣服色、手的姿勢、手上拿的東西
@@ -204,6 +206,21 @@ window.MD = window.MD || {};
             ? `M${x} ${neck + h * .15} l-${h * .25} ${h * .12} M${x} ${neck + h * .15} l${h * .3} -${h * .05}`
             : `M${x} ${neck + h * .15} l-${h * .25} ${h * .16} M${x} ${neck + h * .15} l${h * .25} ${h * .16}`;
         const smile = pk([`M${x - 3} ${top + 3} q3 3 6 0`, `M${x - 3} ${top + 2} q3 5 6 0`, `M${x - 2} ${top + 3} h4`]);
+        if (ST !== 'low') {
+          const bw = h * .2, by = neck + 1, bh = h * .4;
+          const eyes = ST === 'high'
+            ? `<ellipse cx="${x - 2.8}" cy="${top}" rx="1.5" ry="2.1" fill="${INK}"/><ellipse cx="${x + 2.8}" cy="${top}" rx="1.5" ry="2.1" fill="${INK}"/><circle cx="${x - 2.4}" cy="${top - .8}" r=".6" fill="#fff"/><circle cx="${x + 3.2}" cy="${top - .8}" r=".6" fill="#fff"/>`
+            : `<circle cx="${x - 2.6}" cy="${top - .5}" r="1.1" fill="${INK}"/><circle cx="${x + 2.6}" cy="${top - .5}" r="1.1" fill="${INK}"/>`;
+          return `
+          <path d="M${x - bw * .7} ${by} L${x + bw * .7} ${by} L${x + bw} ${by + bh} L${x - bw} ${by + bh} Z" fill="${shirt}" stroke="${INK}" stroke-width=".8"/>
+          ${crayon(arms, INK, 2.4)}
+          ${crayon(`M${x - bw * .5} ${by + bh} l-${h * .05} ${h * .36} M${x + bw * .5} ${by + bh} l${h * .05} ${h * .36}`, INK, 3)}
+          <circle cx="${x}" cy="${top}" r="${hr}" fill="#fde3d3" stroke="${INK}" stroke-width=".9"/>
+          <path d="M${x - hr - .4} ${top + 1} q0 ${-hr * 1.5} ${hr + .4} ${-hr - .4} q${hr + .4} 0 ${hr + .4} ${hr + 1.4} q-${hr * .9} -${hr * .2} -${hr * 1.2} -${hr * .9} q-${hr * .3} ${hr * .6} -${hr * 1.2} ${hr * .9}z" fill="${hair}"/>
+          ${eyes}
+          ${crayon(smile, INK, 1.8)}
+          ${item ? `<text x="${x + h * .3}" y="${neck + h * .12}" font-size="${h * .26}">${item}</text>` : ''}`;
+        }
         return `
           <circle cx="${x}" cy="${top}" r="${hr}" fill="#fde3d3" stroke="${INK}" stroke-width="2.2"/>
           ${crayon(`M${x - hr} ${top - hr * .3} q${hr} ${-hr * 1.6} ${hr * 2} 0`, hair, 5)}
@@ -224,8 +241,10 @@ window.MD = window.MD || {};
         () => `<text x="${rnd(80, 98)}" y="20" font-size="16">🌙</text><text x="${rnd(10, 40)}" y="16" font-size="9">⭐</text><text x="${rnd(50, 70)}" y="12" font-size="7">⭐</text>`,
       ];
       const sky = pk(skies)();
-      const caption = rnd(0, 1) < .6 ? pk(['媽媽', 'MAMA', '我和媽媽', '我愛媽媽', '♡♡♡', 'ETHAN', '最開心', '好玩！']) : '';
-      const hearts = Array.from({ length: Math.floor(rnd(0, 3)) }, () => `<path transform="translate(${rnd(10, 110)} ${rnd(26, 50)}) scale(${rnd(.5, .9)})" d="M0 0 q4 -6 8 0 q4 -6 8 0 l-8 9z" fill="${pk(['#f08aa2', '#ff6fa5', '#c38bff'])}" opacity=".85"/>`).join('');
+      const kidName = (MD.state && MD.state.profile.kid.name) || 'Ethan';
+      const caption = ST === 'high' ? '' : ST === 'mid' ? (rnd(0, 1) < .7 ? pk(['給媽媽', '今天', 'Mom & me', '我們的一天', '謝謝媽媽', '最棒的一天']) : '')
+        : rnd(0, 1) < .6 ? pk(['媽媽', 'MAMA', '我和媽媽', '我愛媽媽', '♡♡♡', 'ETHAN', '最開心', '好玩！']) : '';
+      const hearts = Array.from({ length: ST === 'high' ? 0 : Math.floor(rnd(0, ST === 'mid' ? 2 : 3)) }, () => `<path transform="translate(${rnd(10, 110)} ${rnd(26, 50)}) scale(${rnd(.5, .9)})" d="M0 0 q4 -6 8 0 q4 -6 8 0 l-8 9z" fill="${pk(['#f08aa2', '#ff6fa5', '#c38bff'])}" opacity=".85"/>`).join('');
 
       const mx = rnd(24, 42), kx = mx + rnd(20, 30);
       let scene = '';
@@ -278,13 +297,76 @@ window.MD = window.MD || {};
             ${MD.state && MD.state.dadHits ? `<text x="${rnd(10, 30)}" y="30" font-size="10">⭐</text><text x="${rnd(8, 26)}" y="38" font-size="5" fill="${INK}">爸爸</text>` : ''}`;
       }
 
-      return `<svg viewBox="0 0 120 110" class="drawing-svg">
+      // 紙張：中年級是有格線的筆記本，高年級是素描本（線圈在上面）
+      const paperDeco = ST === 'mid' ? Array.from({ length: 9 }, (_, i) => `<line x1="0" x2="120" y1="${12 + i * 11}" y2="${12 + i * 11}" stroke="#d6e4f0" stroke-width=".6"/>`).join('') + '<line x1="12" x2="12" y1="0" y2="110" stroke="#f3c2c2" stroke-width=".6"/>'
+        : ST === 'high' ? Array.from({ length: 10 }, (_, i) => `<circle cx="${8 + i * 11.6}" cy="4" r="2.2" fill="none" stroke="#9a9a9a" stroke-width="1"/>`).join('') : '';
+      const sign = ST === 'high' ? `<text x="112" y="106" text-anchor="end" font-size="6" fill="#555" font-style="italic" font-family="Georgia,serif">— ${kidName.charAt(0)}.</text>` : '';
+      // 高年級：鉛筆素描，只留一點點顏色
+      const sketch = ST === 'high' ? `<defs><filter id="pencil${seed}"><feColorMatrix type="saturate" values=".12"/></filter></defs>` : '';
+      const hatch = ST === 'high' ? Array.from({ length: 7 }, (_, i) => `<path d="M${rnd(4, 100)} ${rnd(70, 96)} l8 -6" stroke="#bbb" stroke-width=".5"/>`).join('') : '';
+      return `<svg viewBox="0 0 120 110" class="drawing-svg drawing-${ST}">
+        ${sketch}
         <rect width="120" height="110" fill="${paper}"/>
+        ${paperDeco}
+        <g${ST === 'high' ? ` filter="url(#pencil${seed})"` : ''}>
         ${sky}
-        ${crayon(`M0 ${100 + +j(1)} q60 ${j(4)} 120 0`, ground, 6)}
+        ${crayon(`M0 ${100 + +j(1)} q60 ${j(4)} 120 0`, ground, ST === 'low' ? 6 : 3)}
         ${hearts}
+        ${hatch}
         ${scene}
+        </g>
+        ${ST === 'high' ? `<path transform="translate(${rnd(14, 100)} ${rnd(26, 40)}) scale(.45)" d="M0 0 q4 -6 8 0 q4 -6 8 0 l-8 9z" fill="#e07a5f"/>` : ''}
+        ${sign}
         ${caption ? `<text x="${rnd(6, 60)}" y="${rnd(58, 66)}" font-size="9" fill="${pk(['#e0565b', '#6c5ce7', '#2e9e6e', '#f08a24'])}" font-weight="700" transform="rotate(${j(8)} 40 60)" style="font-family:'Comic Sans MS',cursive">${caption}</text>` : ''}
+      </svg>`;
+    },
+
+    /* 國中生不畫畫了：冰箱上是一張便條紙，或是他傳給你的一張照片 */
+    teenNote(theme, seed = 1, dish) {
+      let r = (seed % 233280) + 1;
+      const rnd = (a, b) => { r = (r * 9301 + 49297) % 233280; return a + (r / 233280) * (b - a); };
+      const pk = arr => arr[Math.floor(rnd(0, arr.length))];
+      const name = (MD.state && MD.state.profile.kid.name) || 'Ethan';
+      if (rnd(0, 1) < .6) {
+        const NOTES = {
+          tennis: ['今天贏了一局。\n下次再來看。', '球拍線好像要換了\n（不急）'],
+          school: ['聯絡簿在桌上\n要簽名', '明天要交的\n我寫完了'],
+          homework: ['數學寫完了\n不用叫我', '作業在桌上\n幫我簽名'],
+          cram: ['補習班講義在書包\n不用等我吃宵夜'],
+          food: [`晚餐的${dish || '菜'}\n很好吃`, `明天可以\n再做${dish || '一樣的'}嗎`],
+          family: ['爸今天又被打了\n哈'],
+          cafe: ['媽，你今天\n看起來很開心'],
+          market: ['下次去市場\n我可以幫忙提'],
+          home: ['我先睡了\n晚安', '謝謝今天', '冰箱的布丁是我的\n（只有這次）'],
+        };
+        const text = pk(NOTES[theme] || NOTES.home);
+        const color = pk(['#f7e27a', '#f5b5a3', '#b9e0c8', '#bcd3f0']);
+        const lines = text.split('\n');
+        return `<svg viewBox="0 0 120 110" class="drawing-svg drawing-jh">
+          <rect width="120" height="110" fill="#2a3343" opacity="0"/>
+          <g transform="rotate(${rnd(-4, 4).toFixed(1)} 60 55)">
+            <rect x="14" y="10" width="92" height="90" fill="${color}"/>
+            <rect x="14" y="10" width="92" height="12" fill="#000" opacity=".06"/>
+            ${lines.map((l, i) => `<text x="22" y="${42 + i * 15}" font-size="10.5" fill="#333" font-family="'Noto Sans TC',sans-serif">${l}</text>`).join('')}
+            <text x="98" y="92" text-anchor="end" font-size="8" fill="#555">— ${name.charAt(0)}</text>
+          </g>
+        </svg>`;
+      }
+      // 手機照片：他傳給你的
+      const SKY = { tennis: ['#f6c48a', '#7da5c9'], park: ['#9fd0e8', '#e8f2d8'], beach: ['#8cc3e0', '#f2dfb5'], nightmarket: ['#1d2236', '#5a3e55'], home: ['#1d2236', '#3a4560'] };
+      const [a, b] = SKY[theme] || pk([['#f2a97e', '#6b7fa8'], ['#9fd0e8', '#e9eef2'], ['#e8b45c', '#7a6a8f']]);
+      const icon = theme === 'food' ? (dish || '🍽️') : (MD.CARDS[theme] && MD.CARDS[theme].icon) || pk(['🐈', '🌇', '☁️', '🌙']);
+      const cap = pk(['今天的天空', '回家路上', '你看', '（無題）', '這個', '剛剛']);
+      return `<svg viewBox="0 0 120 110" class="drawing-svg drawing-jh">
+        <defs><linearGradient id="ph${seed}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs>
+        <g transform="rotate(${rnd(-3, 3).toFixed(1)} 60 55)">
+          <rect x="12" y="6" width="96" height="98" fill="#f6f3ee"/>
+          <rect x="18" y="12" width="84" height="66" fill="url(#ph${seed})"/>
+          <path d="M18 ${rnd(60, 68)} q42 ${rnd(-8, 8)} 84 0 V78 H18z" fill="#000" opacity=".25"/>
+          <text x="60" y="56" text-anchor="middle" font-size="22">${icon}</text>
+          <text x="22" y="94" font-size="9" fill="#444" font-family="'Noto Sans TC',sans-serif">${cap}</text>
+          <text x="98" y="94" text-anchor="end" font-size="7" fill="#888">📱 ${name.charAt(0)}</text>
+        </g>
       </svg>`;
     },
 

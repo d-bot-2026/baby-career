@@ -113,7 +113,8 @@ window.MD = window.MD || {};
   /* ── 網球：撿球 ── */
   async function pickup() {
     const { field, foot } = open('court', '幫忙撿球', '點網球，收進籃子');
-    const total = 12; let got = 0;
+    const visits = MD.state.placeVisits.tennis || 0;
+    const total = visits < 2 ? 6 : visits < 5 ? 9 : 12; let got = 0;
     foot.innerHTML = `<span class="basket">🧺</span><span class="counter">0 / ${total}</span>`;
     const cnt = foot.querySelector('.counter'), basket = foot.querySelector('.basket');
     kid(field, 'sparkle', '媽媽加油！');
@@ -139,7 +140,7 @@ window.MD = window.MD || {};
         field.appendChild(b);
       }
     });
-    const st = starsBy(since(t0), 8, 14, true);
+    const st = starsBy(since(t0), total * .7, total * 1.2, true);
     kid(field, 'happy', '全部撿完了！');
     await wait(500);
     await done(field, '全部撿完 🎾', 2 + st, st === 3 ? '「媽媽撿球比教練還快！」' : '', st);
@@ -498,18 +499,17 @@ window.MD = window.MD || {};
     await wait(1500);
     // 便當盒回來了（前一天晚上準備的）
     const b = t.bento;
-    if (b && b.dish) {
-      const theme = MD.BENTO_THEMES.find(x => x.id === b.theme);
+    if (b) {
       const box = document.createElement('div'); box.className = 'bento-return';
-      box.innerHTML = `🍱${theme ? theme.icon : b.by === 'dad' ? '👨' : ''}`;
+      box.innerHTML = `🍱${b.by === 'dad' ? '👨' : ''}`;
       field.appendChild(box);
       let line;
+      const c = b.cond && MD.BENTO.conds.find(x => x.id === b.cond);
       if (b.by === 'dad') line = MD.DAD_BENTO[b.variant] ? MD.DAD_BENTO[b.variant].school : '爸爸做的便當，吃光光了！';
-      else if (b.score === 'perfect') line = st === 'jh' ? `……同學說我的便當很可愛。我說是我媽做的。` : `同學都說我的${theme.name}便當好可愛！`;
-      else if (b.score === 'creative') line = pick(['同學問我那是什麼動物。我說是新品種。', '有人說我的便當是外星人。我說謝謝。']);
-      else line = MD.DISHES[b.dish].like === 'veg' ? '……青菜還在裡面。' : '便當吃光光了！';
-      kid(field, 'happy', line);
-      mian += b.score === 'perfect' ? 2 : 1;
+      else if (c) line = (st === 'jh' && c.jh ? c.jh : c)[b.met ? 'yes' : 'no'];
+      else line = '便當吃光光了！';
+      kid(field, b.by === 'dad' || b.met ? 'happy' : 'think', line);
+      mian += b.met || b.by === 'dad' ? 2 : 1;
       await wait(1800);
     }
     // 學校的小新聞（依階段，輪流不重複）
@@ -623,6 +623,42 @@ window.MD = window.MD || {};
     await wait(1300);
     await done(field, '出門囉，剛剛好', 2);
     return { mian: 2 };
+  }
+
+  /* ── 國中出門：他自己會找東西了，只是常常忘了今天要帶什麼 ── */
+  const FORGOT = [
+    { today: '今天有體育課。', need: 'gym' },
+    { today: '今天要交數學作業。', need: 'math' },
+    { today: '今天放學要搭公車去比賽。', need: 'card' },
+    { today: '今天要考英文聽力。', need: 'phones' },
+    { today: '今天下午有實驗課，老師說要帶水。', need: 'bottle' },
+  ];
+  const TABLE = { gym: ['👕', '運動服'], math: ['📄', '數學作業'], card: ['💳', '悠遊卡'], phones: ['🎧', '耳機'], bottle: ['🧴', '水壺'] };
+  async function forgot() {
+    const f = pick(FORGOT);
+    const { field, foot } = open('home', '出門前', '桌上有一樣他今天會用到的，拿給他');
+    kid(field, 'normal', `媽，我走了。${f.today}`);
+    const items = [f.need, ...Object.keys(TABLE).filter(k => k !== f.need).sort(() => Math.random() - .5).slice(0, 3)].sort(() => Math.random() - .5);
+    let tries = 0;
+    await new Promise(resolve => {
+      foot.innerHTML = '';
+      items.forEach(k => {
+        const b = document.createElement('button');
+        b.className = 'big-choice'; b.innerHTML = `<span>${TABLE[k][0]}</span><small>${TABLE[k][1]}</small>`;
+        b.onclick = () => {
+          if (k === f.need) { foot.innerHTML = ''; resolve(); return; }
+          tries++; buzz(8);
+          b.disabled = true; b.style.opacity = '.35';
+          say(field, pick(['那個今天用不到啦。', '不是那個……', '嗯？那個放著就好。']));
+        };
+        foot.appendChild(b);
+      });
+    });
+    kid(field, 'shy', pick(['……啊。謝啦，媽。', '差點忘了。（接過去，沒有回頭，但揮了揮手）', '喔對。……謝謝。']));
+    if (!tries) hearts(field, 4);
+    await wait(1500);
+    await done(field, '出門囉', tries ? 2 : 3, tries ? '' : '「你怎麼知道？」');
+    return { mian: tries ? 2 : 3 };
   }
 
   /* ── 市場：買新食材 ── */
@@ -873,14 +909,6 @@ window.MD = window.MD || {};
     return { mian };
   }
 
-  async function snack(ctx) {
-    const d = MD.DISHES[ctx.dish];
-    const { field, foot } = open(ctx.bg || 'park', '點心：' + d.name, '');
-    const mian = await eat(field, foot, ctx.dish);
-    await done(field, '補充能量完畢', mian);
-    return { mian };
-  }
-
   /* 做菜：在砧板上切一切（每樣點 3 下）→ 下鍋 → 看準時機起鍋 → 上桌 → 吃 */
   async function cook(ctx) {
     const d = MD.DISHES[ctx.dish];
@@ -958,73 +986,71 @@ window.MD = window.MD || {};
     return { mian };
   }
 
-  /* 造型便當：Ethan 點一個主題，媽媽點配料，配料會自己放到飯糰上合適的位置 */
-  const BENTO_SPOTS = {
-    eyeL: [38, 46], eyeR: [62, 46], earL: [27, 20], earR: [73, 20], nose: [50, 58], mouth: [50, 70],
-    cheekL: [29, 62], cheekR: [71, 62], center: [50, 48], top: [50, 16], bottom: [50, 84],
-  };
-  const DECO_PREF = {
-    nori: ['eyeL', 'eyeR', 'earL', 'earR', 'mouth'],
-    egg: ['center', 'top', 'bottom'],
-    cheese: ['center', 'top', 'bottom'],
-    carrot: ['nose', 'mouth', 'top'],
-    sausage: ['earL', 'earR', 'cheekL', 'cheekR'],
-    ham: ['cheekL', 'cheekR', 'center'],
-    tomato: ['cheekL', 'cheekR', 'nose'],
-    broccoli: ['earL', 'earR', 'top', 'bottom'],
-  };
-  // 媽媽做明天的造型便當
+  /* 準備明天的便當：先看明天的狀況，再選主食、主菜、配菜。
+   * 選得對不對，隔天放學時他會告訴你（便當盒回來了）。 */
+  const BENTO_STEPS = [['base', '主食'], ['main', '主菜'], ['side', '配菜']];
   async function bento(ctx) {
-    const d = MD.DISHES[ctx.dish];
-    const theme = pick(MD.BENTO_THEMES);
+    const st = MD.stage();
+    const B = MD.BENTO;
+    const conds = B.conds.filter(c => !c.stages || c.stages.includes(st));
+    const cond = pick(conds);
     const { field, foot, head } = open('kitchen', '準備明天的便當', '');
-    kid(field, 'sparkle', pick([`明天的便當要${theme.name}！${theme.icon}`, `媽媽，明天可以做${theme.name}嗎？${theme.icon}`, `我想要${theme.name}便當！要很像喔！${theme.icon}`]));
-    const box = document.createElement('div');
-    box.className = 'kyaraben';
-    box.innerHTML = `<div class="kb-side"><span>${d.icon}</span><small>${d.name}</small></div><div class="kb-rice"></div>`;
-    field.appendChild(box);
-    const rice = box.querySelector('.kb-rice');
-    await wait(1100);
-    setHead(head, `做一個${theme.name}`, '點配料，就會放到飯糰上（再點一下可以拿掉）');
+    kid(field, st === 'jh' ? 'normal' : 'think', cond.kid);
+    await wait(1500);
     say(field, '');
     const kidEl = field.querySelector('.mini-kid'); if (kidEl) kidEl.remove();
-    const placed = new Map();   // spot → deco id
-    const tray = document.createElement('div'); tray.className = 'deco-tray';
-    const put = id => {
-      if (placed.size >= 6) { MD.ui.toast('飯糰放滿了'); return; }
-      const order = [...DECO_PREF[id], ...Object.keys(BENTO_SPOTS)];
-      const spot = order.find(s => !placed.has(s));
-      if (!spot) return;
-      placed.set(spot, id);
-      const el = document.createElement('button');
-      el.className = 'kb-deco'; el.textContent = MD.BENTO_DECOS[id].icon;
-      el.style.left = BENTO_SPOTS[spot][0] + '%'; el.style.top = BENTO_SPOTS[spot][1] + '%';
-      el.onclick = () => { placed.delete(spot); el.remove(); };
-      rice.appendChild(el); buzz(10); S('pop');
-    };
-    Object.entries(MD.BENTO_DECOS).forEach(([id, dc]) => {
-      const b = document.createElement('button');
-      b.className = 'deco-btn'; b.innerHTML = `<span>${dc.icon}</span><small>${dc.name}</small>`;
-      b.onclick = () => put(id);
-      tray.appendChild(b);
-    });
-    field.appendChild(tray);
-    await button(foot, '完成，放進冰箱');
-    tray.remove();
-    rice.querySelectorAll('.kb-deco').forEach(el => (el.onclick = null));
-    const need = theme.need.slice(); let hit = 0;
-    [...placed.values()].forEach(p => { const i = need.indexOf(p); if (i >= 0) { need.splice(i, 1); hit++; } });
-    const score = hit === theme.need.length ? 'perfect' : placed.size ? 'creative' : 'plain';
-    setHead(head, '');
-    if (score === 'perfect') { kid(field, 'sparkle', `是${theme.name}！！一模一樣！我明天要給全班看！`); hearts(field, 8); }
-    else if (score === 'creative') kid(field, 'think', pick([`這是……外星${theme.name}嗎？很酷。`, `${theme.name}的親戚。我喜歡。`, '這是一種新的動物。我要幫它取名字。']));
-    else kid(field, 'normal', '白白的飯糰……也可以啦。');
+    const box = document.createElement('div');
+    box.className = 'bento lunchbox';
+    box.innerHTML = '<div class="cell big" data-k="base"><small>主食</small></div><div class="cell" data-k="main"><small>主菜</small></div><div class="cell" data-k="side"><small>配菜</small></div>';
+    field.appendChild(box);
+    const note = document.createElement('div');
+    note.className = 'bento-note';
+    note.innerHTML = `<b>明天</b>${F(cond.note)}<span class="bn-goal">${F(cond.hint)}</span><span class="bn-nut">${['c', 'p', 'v'].map(k => `<i data-n="${k}" style="--c:${MD.NUT[k].color}">★</i>`).join('')} 三種營養</span>`;
+    field.appendChild(note);
+    await wait(500);
+    // 晚餐多做一份，也可以當主菜（湯麵類不適合放便當）
+    const dinner = ctx.dish && MD.DISHES[ctx.dish];
+    const mains = B.main.slice();
+    if (dinner && dinner.meal === 'm' && dinner.unit !== '碗') {
+      mains.unshift({ id: 'dinner', name: '晚餐的' + dinner.name, icon: dinner.icon, nut: dinner.nut, tags: [...(dinner.like === 'love' ? ['love'] : []), ...(/咖哩|糖醋|燴|滷/.test(dinner.name) ? ['saucy'] : [])] });
+    }
+    const pool = { base: B.base, main: mains, side: B.side };
+    const chosen = {};
+    for (const [k, label] of BENTO_STEPS) {
+      setHead(head, `選${label}`, '想想明天的狀況');
+      // 三個選項，至少一個符合明天的需要
+      let opts = pool[k].filter(o => !o.stages || o.stages.includes(st)).sort(() => Math.random() - .5);
+      if (k === 'main' && opts.some(o => o.id === 'dinner')) opts = [opts.find(o => o.id === 'dinner'), ...opts.filter(o => o.id !== 'dinner')];
+      let three = opts.slice(0, 3);
+      const good = opts.find(o => cond.good && cond.good(o));
+      if (good && !three.includes(good) && cond.slot === k) three[2] = good;
+      three = three.sort(() => Math.random() - .5);
+      const v = await choose(foot, three.map(o => ({ icon: o.icon, label: `${o.name}<em class="dots">${[...o.nut].map(n => `<i style="background:${MD.NUT[n].color}"></i>`).join('')}</em>`, v: o })));
+      chosen[k] = v;
+      const cell = box.querySelector(`[data-k="${k}"]`);
+      cell.innerHTML = `<span>${v.icon}</span><small>${v.name}</small>`;
+      cell.classList.add('filled');
+      buzz(10); S('pop');
+      const have = new Set(Object.values(chosen).flatMap(o => [...o.nut]));
+      note.querySelectorAll('.bn-nut i').forEach(i => i.classList.toggle('on', have.has(i.dataset.n)));
+    }
+    const items = Object.values(chosen);
+    const met = cond.check(items);
+    const nut = [...new Set(items.flatMap(o => [...o.nut]))].join('');
+    const balanced = ['c', 'p', 'v'].every(n => nut.includes(n));
+    setHead(head, '便當裝好了', '');
+    note.querySelector('.bn-goal').classList.add(met ? 'ok' : 'miss');
+    await wait(500);
+    const happy = st === 'jh' ? pick(['……喔，看起來不錯。', '謝啦。', '嗯。（偷偷看了一眼）']) : pick(['好好看！明天中午好期待！', '我要第一個打開！', '這是我的便當！']);
+    kid(field, met ? (st === 'jh' ? 'smile' : 'sparkle') : 'normal', met ? happy : (st === 'jh' ? '嗯，好。' : '謝謝媽媽！'));
+    if (met) hearts(field, 5);
     await wait(1500);
     box.classList.add('closed');
     await wait(700);
-    const st = score === 'perfect' ? 3 : score === 'creative' ? 2 : 1;
-    await done(field, '明天的便當準備好了 🍱', 1 + st, '', st);
-    return { mian: 1 + st, bento: { dish: ctx.dish, by: 'mom', theme: theme.id, score } };
+    const stars = 1 + (met ? 1 : 0) + (balanced ? 1 : 0);
+    await done(field, '明天的便當準備好了 🍱', 1 + stars, met ? '明天放學，看看他怎麼說' : F(cond.tip), stars);
+    const mainDish = chosen.main.id === 'dinner' ? ctx.dish : null;
+    return { mian: 1 + stars, bento: { by: 'mom', cond: cond.id, met, balanced, nut, dish: mainDish, icons: items.map(o => o.icon).join('') } };
   }
 
   // 爸爸做明天的便當（很有創意）
@@ -1056,8 +1082,17 @@ window.MD = window.MD || {};
     return Math.random() < .4 ? dadBento(ctx) : bento(ctx);
   }
 
-  /* 中午在家吃（週末） */
-  async function lunch(ctx) { return cook(ctx); }
+  /* 午餐（不用上學的日子）：上午的行程結束，就在那裡吃 */
+  const PLACE_BG = { tennis: 'court', home: 'kitchen', school: 'class' };
+  async function lunch(ctx) {
+    const d = MD.DISHES[ctx.dish];
+    const at = ctx.at || 'home';
+    const where = at === 'home' ? '' : `在${MD.PLACES[at].name}`;
+    const { field, foot } = open(PLACE_BG[at] || at, `午餐${where ? '・' + where : ''}：${d.name}`, '');
+    const mian = await eat(field, foot, ctx.dish);
+    await done(field, '吃飽了，下午繼續', mian);
+    return { mian };
+  }
 
   /* ── 打爸爸 ── */
   const WEAPONS = [
@@ -1850,5 +1885,5 @@ window.MD = window.MD || {};
     return { mian: 20, memory: { id: 'finale', icon: '💌', title: '十五歲的他寫給你的信' } };
   }
 
-  MD.ACTS = { cancelAll: () => { GEN++; close(); }, closeScene: close, swim, books, paint, bookshop, dumpling, shells, flashcards, shot, ringtoss, examDay, graduation, trip, finale, serve, pickup, rally, match, leaves, slide, bubbles, school, homework, shoes, market, cafe, breakfast, snack, cook, lunch, bento, bentoNight, dad, family };
+  MD.ACTS = { cancelAll: () => { GEN++; close(); }, closeScene: close, swim, books, paint, bookshop, dumpling, shells, flashcards, shot, ringtoss, examDay, graduation, trip, finale, serve, pickup, rally, match, leaves, slide, bubbles, school, homework, shoes, market, cafe, breakfast, cook, lunch, bento, bentoNight, forgot, dad, family };
 })();
