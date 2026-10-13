@@ -887,3 +887,152 @@ html, body, #app, button { touch-action: manipulation; }   /* 手機上雙擊不
 .heart { color: var(--clay); font-family: var(--font-story); font-size: 24px; filter: none; }
 .pin { color: var(--clay); font-size: 16px; filter: none; }
 .slot.set, .slot.fixed, .slot.meal.set, .slot.act.set { border-style: none none solid; border-width: 0 0 1px; border-color: var(--line); }
+
+/* ══════════════════════════════════════════════════════════════
+   v9 設計 A：深夜藍與暖燈
+   深藍底、暖黃（燈光）、珊瑚、薄荷；圓臉人物；地點是圓形標誌
+   ══════════════════════════════════════════════════════════════ */
+:root {
+  --cream: #1f2633;      /* 頁面底色 */
+  --paper: #2a3343;      /* 卡片 */
+  --linen: #333d50;      /* 次要底色 */
+  --ink: #f3ece2;        /* 文字 */
+  --ink-soft: #b3aca3;
+  --line: #3d4759;
+  --sage: #8fc1a9; --sage-d: #8fc1a9;
+  --clay: #e07a5f; --clay-d: #f0957c;
+  --mustard: #e8b45c;
+  --navy: #8eaad0;
+  --pink: #e07a5f; --pink-d: #f0957c;
+  --mint: #8fc1a9; --mint-d: #8fc1a9;
+  --lav: #333d50; --lemon: #e8b45c; --candy: #e8b45c; --grass: #2a3343;
+  --amber: #e8b45c;
+  --shadow: 0 2px 4px rgba(0, 0, 0, .18), 0 10px 24px rgba(0, 0, 0, .22);
+}
+html, body { background: #151a23; color: var(--ink); }
+#app { background: var(--cream); box-shadow: 0 0 40px rgba(0, 0, 0, .4); }
+.emoji, .dish, .card-icon, .dish-icon, .big-choice span, .show-item, .pic-big { filter: none; }
+
+.btn { background: var(--paper); border-color: var(--line); color: var(--ink); }
+.btn.primary { background: var(--amber); border-color: var(--amber); color: #1f2633; font-weight: 700; }
+.btn.primary:active { background: #d9a44c; }
+.icon-btn { background: var(--paper); border-color: var(--line); color: var(--ink); }
+
+/* 首頁：深藍夜空、一盞暖燈 */
+#screen-title { background: var(--cream); }
+#screen-title::before { background: radial-gradient(ellipse at 50% 100%, #283245 0 55%, transparent 56%); }
+#screen-title::after { right: -50px; top: -50px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(232, 180, 92, .35) 0 30%, rgba(232, 180, 92, .08) 55%, transparent 70%); }
+.title-small { color: var(--amber); }
+.title-main { color: var(--ink); }
+.title-tagline { color: var(--ink-soft); }
+.title-ground { background: var(--ink); opacity: .2; }
+
+/* 排行程 */
+.plan-head { border-bottom-color: var(--line); }
+.slot-empty { color: #6f7a8c; }
+.card.top, .dish-card.rec { border-color: var(--amber); }
+.tag { background: var(--paper); color: var(--amber); border-color: var(--amber); }
+.coach { border-left-color: var(--amber); }
+.wish { border-left-color: var(--clay); }
+.wish small { color: var(--clay-d); }
+
+/* 地圖：深藍街區、圓形標誌 */
+#screen-map-screen { background: var(--cream); }
+.map { background: radial-gradient(ellipse at 22% 18%, #2e3a4e 0 28%, transparent 29%), radial-gradient(ellipse at 82% 82%, #2e3a4e 0 24%, transparent 25%), #263042; box-shadow: inset 0 0 0 1px var(--line); }
+.roads line { stroke: #323d52; stroke-width: 14px; }
+.place { width: 23%; max-width: 92px; }
+.badge-svg { width: 54px; height: 54px; display: block; filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .35)); transition: transform .2s; }
+.badge-svg.home { width: 62px; height: 62px; }
+.badge-svg.locked { opacity: .32; filter: grayscale(.6); }
+.badge-lock { position: absolute; top: 34px; right: 14%; font-size: 13px; }
+.place:active .badge-svg { transform: scale(.94); }
+.place.next .badge-svg { animation: lampGlow 1.8s ease-in-out infinite; }
+.place.next .bld-svg { animation: none; }
+@keyframes lampGlow { 50% { transform: translateY(-3px); filter: drop-shadow(0 0 10px rgba(232, 180, 92, .7)); } }
+.place-name { color: var(--ink); text-shadow: 0 1px 3px #1f2633, 0 0 6px #1f2633; margin-top: 3px; font-size: 11.5px; }
+.place.locked { opacity: 1; filter: none; }
+.place.locked .place-name { color: #6f7a8c; }
+.pin { color: var(--amber); filter: none; }
+.tree { opacity: .35; filter: saturate(.4) brightness(.8); }
+.walkers.solo::before { background: var(--amber); color: #1f2633; }
+.w-bubble { background: var(--paper); color: var(--ink); border-color: var(--line); }
+
+/* 互動場景：夜晚的室內，暖燈 */
+.bg-court       { background: linear-gradient(#263042 0 28%, #3c5a4c 28% 100%); }
+.bg-park        { background: linear-gradient(#263042 0 30%, #34503f 30% 100%); }
+.bg-class       { background: linear-gradient(#2a3343 0 64%, #3a4356 64% 100%); }
+.bg-market      { background: linear-gradient(#2c3445 0 60%, #463e3a 60% 100%); }
+.bg-cafe        { background: linear-gradient(#2e2f3a 0 60%, #4a3a32 60% 100%); }
+.bg-kitchen     { background: linear-gradient(#283142 0 58%, #3a4252 58% 100%); }
+.bg-tvroom      { background: linear-gradient(#272f40 0 62%, #3a3f4f 62% 100%); }
+.bg-home        { background: linear-gradient(#283142 0 62%, #3a4252 62% 100%); }
+.bg-pool        { background: linear-gradient(#263042 0 34%, #2f5466 34% 100%); }
+.bg-library     { background: linear-gradient(#2a3040 0 62%, #3d3a46 62% 100%); }
+.bg-art         { background: linear-gradient(#2b3242 0 64%, #43404d 64% 100%); }
+.bg-bookstore   { background: linear-gradient(#2c3040 0 62%, #4a3d38 62% 100%); }
+.bg-grandma     { background: linear-gradient(#2d3040 0 60%, #4c3c34 60% 100%); }
+.bg-beach       { background: linear-gradient(#263042 0 34%, #2f5466 34% 52%, #5a5040 52% 100%); }
+.bg-cram        { background: linear-gradient(#283142 0 64%, #384052 64% 100%); }
+.bg-clinic      { background: linear-gradient(#283344 0 64%, #35455a 64% 100%); }
+.bg-nightmarket { background: linear-gradient(#1a1f2b 0%, #2f3446 55%, #5a4038 100%); }
+.bg-japan       { background: linear-gradient(#1a1f2b 0%, #33364c 55%, #6a4a46 100%); }
+.bg-fuji        { background: linear-gradient(#2c3a52 0 55%, #34503f 55% 100%); }
+.bg-paris       { background: linear-gradient(#2c3040 0 60%, #3c4a40 60% 100%); }
+.deco-layer { filter: none; opacity: .9; }
+.d-window { border-color: #3d4759; background: linear-gradient(#151a23, #2a3550); }
+.d-window::after { background: linear-gradient(90deg, transparent 48%, #3d4759 48% 52%, transparent 52%), linear-gradient(transparent 48%, #3d4759 48% 52%, transparent 52%); }
+.d-lamp::after { background: var(--amber); box-shadow: 0 12px 40px 16px rgba(232, 180, 92, .3); }
+.d-court, .d-net, .d-court::before { border-color: rgba(243, 236, 226, .55); }
+.d-counter { background: #4a4440; }
+.d-awning { background: repeating-linear-gradient(90deg, #e07a5f 0 30px, #2a3343 30px 60px); }
+
+.mini-head h3 { background: var(--paper); border-color: var(--line); color: var(--ink); }
+.mini-head p { background: rgba(42, 51, 67, .92); color: var(--ink-soft); }
+.mini-bubble { background: var(--paper); border-color: var(--line); color: var(--ink); box-shadow: var(--shadow); }
+.mini-done { background: rgba(31, 38, 51, .95); }
+.mian-get { color: var(--amber); }
+.counter, .big-choice { background: var(--paper); border-color: var(--line); }
+.big-choice small { color: var(--ink); }
+.meter { background: var(--linen); border-color: var(--line); }
+.meter i { background: var(--amber); }
+.stars i { color: #3d4759; }
+.stars i.on { color: var(--amber); }
+.push-btn { background: var(--paper); border-color: var(--amber); color: var(--ink); }
+.push-btn.ready { background: var(--amber); color: #1f2633; border-color: var(--amber); }
+.pow { color: var(--amber); text-shadow: 0 2px 6px rgba(0, 0, 0, .6); }
+.heart { color: var(--clay-d); }
+.flash { background: var(--amber); }
+.flash.up { background: var(--paper); color: var(--ink); }
+.flash.ok { background: #2f4a40; color: var(--mint); }
+.unlock-card, .phone-msg, .cafe-book, .review-card, .tap-hint { background: var(--paper); color: var(--ink); }
+.unlock-card small { color: var(--amber); }
+.phone-msg b { color: var(--amber); }
+.cafe-quote { background: rgba(31, 38, 51, .88); color: var(--ink); }
+.old-photo, .float-mem { background: #f3ece2; color: #2f2a26; }
+.polaroid { background: var(--paper); }
+.polaroid .pic { background: var(--linen); }
+.fridge { background: #263042; box-shadow: inset 0 0 0 3px var(--line), var(--shadow); }
+.fridge-art small { color: #6b6259; }
+.frame-wood { background: repeating-linear-gradient(#8a6a52 0 18px, #7c5e48 18px 20px); }
+.mark, .doorframe small { color: var(--ink-soft); }
+.mark i { background: var(--amber); }
+.seg button.on { background: var(--paper); box-shadow: none; color: var(--ink); }
+.pop { background: var(--paper); color: var(--ink); box-shadow: 0 16px 40px rgba(0, 0, 0, .45); }
+.pop .tap { color: var(--amber); }
+.pop.letter { background: #f6efe4; background-image: repeating-linear-gradient(transparent 0 31px, #e8dfd2 31px 32px); }
+.pop.letter .q { color: #2f2a26; }
+#popup { background: rgba(10, 13, 20, .55); }
+#sheet { background: rgba(10, 13, 20, .5); }
+.float-toast { background: var(--paper); color: var(--ink); border-color: var(--line); }
+.saved-toast { background: #3c5a4c; }
+.set-card textarea { background: #1f2633; color: var(--ink); border-color: var(--line); }
+.kyaraben { background: #e07a5f; }
+.dad-bento { background: #7c95b8; }
+.c-sofa { background: #4a5a74; box-shadow: inset 0 14px 0 #5a6b86; }
+.desk-top { background: #8a6a52; box-shadow: inset 0 8px 0 #9a7a60; }
+.board { background: #a88a6c; box-shadow: inset 0 -6px 0 #957859, var(--shadow); }
+.trio.framed { border-color: #f3ece2; background: #333d50; }
+.start-grid button.rec { border-color: var(--amber); }
+#screen-night { background: linear-gradient(#151a23 0%, #222a3a 55%, #3a3340 100%); }
+.night-card { background: var(--paper); }
+.mian-big { color: var(--amber); }

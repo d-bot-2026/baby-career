@@ -350,8 +350,7 @@ window.MD = window.MD || {};
       </svg>
       ${Object.entries(MD.PLACES).map(([id, p]) => { const lk = !placeOpen(id); return `
         <button class="place ${lk ? 'locked' : ''}" data-id="${id}" style="left:${p.pos[0]}%;top:${p.pos[1]}%">
-          ${MD.art.building(p, lk)}
-          <span class="place-icon">${lk ? '🔒' : p.icon}</span>
+          ${MD.art.badge(id, lk)}${lk ? '<span class="badge-lock">🔒</span>' : ''}
           <span class="place-name">${placeName(id)}</span>
         </button>`; }).join('')}
       <span class="tree" style="left:4%;top:37%">🌳</span><span class="tree" style="left:96%;top:75%">🌲</span>

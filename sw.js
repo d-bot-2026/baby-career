@@ -1,8 +1,8 @@
 /* 離線快取：遊戲檔案先存起來，沒網路也能玩。更新內容時把 VERSION +1。 */
-const VERSION = 'baby-career-v11';
+const VERSION = 'baby-career-v12';
 const SHELL = [
-  './', './index.html', './css/style.css?v=17', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png',
-  './js/config.js?v=17', './js/save.js?v=17', './js/art.js?v=17', './js/data.js?v=17', './js/audio.js?v=17', './js/acts.js?v=17', './js/game.js?v=17',
+  './', './index.html', './css/style.css?v=18', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png',
+  './js/config.js?v=18', './js/save.js?v=18', './js/art.js?v=18', './js/data.js?v=18', './js/audio.js?v=18', './js/acts.js?v=18', './js/game.js?v=18',
 ];
 
 self.addEventListener('install', e => {

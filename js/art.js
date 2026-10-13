@@ -6,25 +6,24 @@
 window.MD = window.MD || {};
 
 (function () {
-  // 大人感的簡約插畫：比例自然、細線條、低飽和的大地色
-  const INK = '#3a322d';
-  const SKIN = '#f1dccb';
-  const BLUSH = '#e2a48e';
+  // 圓臉剪影風：圓圓的臉、小點眼、簡單的髮型，身體是圓角色塊。在深色底上配暖色衣服。
+  const INK = '#2a2420';
+  const SKIN = '#f2d7c3';
+  const BLUSH = '#e8a48c';
 
   const CHAR = {
-    mom: { hair: '#3b2a22', shirt: '#efe6d8', outer: '#8a9a7b', accent: '#c4775a' },
-    kid: { hair: '#2c2420', shirt: '#a9bfa0', accent: '#f1ece2' },
-    dad: { hair: '#2f2b29', shirt: '#3e4a5c', accent: '#e9e2d6' },
+    mom: { hair: '#3a2a24', shirt: '#e07a5f', accent: '#f3ece2' },
+    kid: { hair: '#2a2420', shirt: '#8fc1a9', accent: '#f3ece2' },
+    dad: { hair: '#2a2622', shirt: '#7c95b8', accent: '#f3ece2' },
   };
 
-  // 孩子的衣服依成長階段變化：鼠尾草綠 → 霧藍 → 芥末黃 → 國中白襯衫制服
-  const KID_LOOK = { low: '#a9bfa0', mid: '#9fb3c8', high: '#d9b66f', jh: '#f7f4ee' };
+  // 孩子的衣服依成長階段變化：薄荷綠 → 霧藍 → 暖黃 → 國中白襯衫配深藍領帶
+  const KID_LOOK = { low: '#8fc1a9', mid: '#8eaad0', high: '#e8b45c', jh: '#eeeae2' };
   function kidLook() {
     const st = (MD.stage && MD.state) ? MD.stage() : 'low';
     return Object.assign({}, CHAR.kid, { shirt: KID_LOOK[st], uniform: st === 'jh', stage: st });
   }
 
-  // 表情 → 眼睛 / 嘴巴 / 眉毛 / 額外效果
   const EXPR = {
     normal:    { eyes: 'dot',   mouth: 'smile' },
     happy:     { eyes: 'arc',   mouth: 'open' },
@@ -41,86 +40,74 @@ window.MD = window.MD || {};
     shy:       { eyes: 'arc',   mouth: 'smile', extra: 'bigblush' },
   };
 
-  const EY = 63, EL = 51, ER = 69, MY = 75;
+  const EY = 64, EL = 49, ER = 71, MY = 75;
   function eyes(type) {
     const pair = f => f(EL) + f(ER);
-    const s = `stroke="${INK}" stroke-width="1.8" fill="none" stroke-linecap="round"`;
+    const s = `stroke="${INK}" stroke-width="2.4" fill="none" stroke-linecap="round"`;
     switch (type) {
-      case 'arc':  return pair(x => `<path d="M${x - 3.5} ${EY + .5} q3.5 -4 7 0" ${s}/>`);
-      case 'big':  return pair(x => `<circle cx="${x}" cy="${EY}" r="3" fill="${INK}"/><circle cx="${x + 1}" cy="${EY - 1}" r=".9" fill="#fff"/>`);
-      case 'side': return pair(x => `<ellipse cx="${x + 1.6}" cy="${EY}" rx="1.7" ry="2.1" fill="${INK}"/>`);
-      case 'half': return pair(x => `<path d="M${x - 3.5} ${EY} h7" ${s}/><path d="M${x - 2.5} ${EY} q2.5 2.6 5 0" fill="${INK}"/>`);
-      case 'x':    return pair(x => `<path d="M${x - 2.5} ${EY - 2.5} l5 5 M${x + 2.5} ${EY - 2.5} l-5 5" ${s}/>`);
-      case 'line': return pair(x => `<path d="M${x - 3.5} ${EY + .5} q3.5 2 7 0" ${s}/>`);
-      case 'star': return pair(x => `<ellipse cx="${x}" cy="${EY}" rx="2.2" ry="2.6" fill="${INK}"/><circle cx="${x + .8}" cy="${EY - 1}" r=".9" fill="#fff"/><circle cx="${x - .7}" cy="${EY + .8}" r=".45" fill="#fff"/>`);
-      default:     return pair(x => `<ellipse cx="${x}" cy="${EY}" rx="1.8" ry="2.2" fill="${INK}"/>`);
+      case 'arc':  return pair(x => `<path d="M${x - 4.5} ${EY + 1} q4.5 -5 9 0" ${s}/>`);
+      case 'big':  return pair(x => `<circle cx="${x}" cy="${EY}" r="3.8" fill="${INK}"/><circle cx="${x + 1.2}" cy="${EY - 1.2}" r="1.2" fill="#fff"/>`);
+      case 'side': return pair(x => `<circle cx="${x + 2}" cy="${EY}" r="2.8" fill="${INK}"/>`);
+      case 'half': return pair(x => `<path d="M${x - 4.5} ${EY} h9" ${s}/><path d="M${x - 3.5} ${EY} q3.5 3.4 7 0" fill="${INK}"/>`);
+      case 'x':    return pair(x => `<path d="M${x - 3.5} ${EY - 3.5} l7 7 M${x + 3.5} ${EY - 3.5} l-7 7" ${s}/>`);
+      case 'line': return pair(x => `<path d="M${x - 4.5} ${EY + 1} q4.5 2.6 9 0" ${s}/>`);
+      case 'star': return pair(x => `<circle cx="${x}" cy="${EY}" r="3.4" fill="${INK}"/><circle cx="${x + 1.1}" cy="${EY - 1.2}" r="1.2" fill="#fff"/><circle cx="${x - 1}" cy="${EY + 1.1}" r=".6" fill="#fff"/>`);
+      default:     return pair(x => `<circle cx="${x}" cy="${EY}" r="2.9" fill="${INK}"/>`);
     }
   }
   function mouth(type) {
-    const s = `stroke="${INK}" stroke-width="1.7" fill="none" stroke-linecap="round"`;
+    const s = `stroke="${INK}" stroke-width="2.2" fill="none" stroke-linecap="round"`;
     switch (type) {
-      case 'open':  return `<path d="M55.5 ${MY - 1} q4.5 6 9 0 z" fill="#b8665a" stroke="${INK}" stroke-width="1.4" stroke-linejoin="round"/>`;
-      case 'frown': return `<path d="M56.5 ${MY + 1.5} q3.5 -3 7 0" ${s}/>`;
-      case 'wave':  return `<path d="M55 ${MY} q1.25 -1.6 2.5 0 t2.5 0 t2.5 0 t2.5 0" ${s}/>`;
-      case 'o':     return `<ellipse cx="60" cy="${MY}" rx="2.2" ry="2.8" fill="#b8665a" stroke="${INK}" stroke-width="1.3"/>`;
-      case 'flat':  return `<path d="M57 ${MY} h6" ${s}/>`;
-      case 'smirk': return `<path d="M56.5 ${MY} q4 2.4 7.5 -1.6" ${s}/>`;
-      default:      return `<path d="M56.5 ${MY - .5} q3.5 3 7 0" ${s}/>`;
+      case 'open':  return `<path d="M54 ${MY - 1} q6 8 12 0 z" fill="#b8574a" stroke="${INK}" stroke-width="1.8" stroke-linejoin="round"/>`;
+      case 'frown': return `<path d="M55 ${MY + 2} q5 -4 10 0" ${s}/>`;
+      case 'wave':  return `<path d="M53 ${MY} q1.75 -2.2 3.5 0 t3.5 0 t3.5 0 t3.5 0" ${s}/>`;
+      case 'o':     return `<ellipse cx="60" cy="${MY}" rx="3" ry="3.6" fill="#b8574a" stroke="${INK}" stroke-width="1.6"/>`;
+      case 'flat':  return `<path d="M56 ${MY} h8" ${s}/>`;
+      case 'smirk': return `<path d="M55 ${MY} q5.5 3.2 10 -2" ${s}/>`;
+      default:      return `<path d="M55 ${MY - .5} q5 4 10 0" ${s}/>`;
     }
   }
-  function brows(type, who) {
-    const s = `stroke="${INK}" stroke-width="1.4" stroke-linecap="round" fill="none" opacity=".75"`;
-    if (type === 'sad') return `<path d="M47 56 l7 -1.6 M73 56 l-7 -1.6" ${s}/>`;
-    if (type === 'angry') return `<path d="M47 53.5 l7 2.4 M73 53.5 l-7 2.4" ${s}/>`;
-    if (type === 'up') return `<path d="M47.5 54 q3.5 -2.4 7 -.6 M72.5 54 q-3.5 -2.4 -7 -.6" ${s}/>`;
-    // 大人平常就有淡淡的眉毛
-    return who === 'kid' ? '' : `<path d="M47.5 55.5 q3.5 -1.6 7 -.4 M72.5 55.5 q-3.5 -1.6 -7 -.4" ${s}/>`;
+  function brows(type) {
+    const s = `stroke="${INK}" stroke-width="2" stroke-linecap="round" fill="none"`;
+    if (type === 'sad') return `<path d="M44 55 l9 -2 M76 55 l-9 -2" ${s}/>`;
+    if (type === 'angry') return `<path d="M44 52 l9 3 M76 52 l-9 3" ${s}/>`;
+    if (type === 'up') return `<path d="M44.5 54 q4.5 -3 9 -.8 M75.5 54 q-4.5 -3 -9 -.8" ${s}/>`;
+    return '';
   }
   function extra(type) {
     switch (type) {
-      case 'tears': return `<path d="M49 67 q-2 5 0 7 q2 -2 0 -7z M71 67 q-2 5 0 7 q2 -2 0 -7z" fill="#8fb6c9"/>`;
-      case 'sweat': return `<path d="M84 44 q-3.5 5 0 7 q3.5 -2 0 -7z" fill="#a9c3cf"/>`;
-      case 'vein':  return `<path d="M80 38 l3 3 m0 -3 l-3 3" stroke="#c4775a" stroke-width="1.8" stroke-linecap="round"/>`;
-      case 'stars': return `<text x="22" y="34" font-size="11" fill="#c99a47">✦</text><text x="90" y="30" font-size="9" fill="#c99a47">✦</text>`;
-      case 'zzz':   return `<text x="84" y="34" font-size="11" fill="#7a6f66" font-family="serif" font-style="italic">z z</text>`;
-      case 'bigblush': return `<ellipse cx="46" cy="70" rx="5.5" ry="2.8" fill="${BLUSH}" opacity=".55"/><ellipse cx="74" cy="70" rx="5.5" ry="2.8" fill="${BLUSH}" opacity=".55"/>`;
+      case 'tears': return `<path d="M46 70 q-2.5 6 0 8.5 q2.5 -2.5 0 -8.5z M74 70 q-2.5 6 0 8.5 q2.5 -2.5 0 -8.5z" fill="#8fc1e0"/>`;
+      case 'sweat': return `<path d="M88 44 q-4 6 0 8.5 q4 -2.5 0 -8.5z" fill="#a9c9dc"/>`;
+      case 'vein':  return `<path d="M84 36 l4 4 m0 -4 l-4 4" stroke="#e07a5f" stroke-width="2.4" stroke-linecap="round"/>`;
+      case 'stars': return `<text x="20" y="32" font-size="13" fill="#e8b45c">✦</text><text x="92" y="28" font-size="10" fill="#e8b45c">✦</text>`;
+      case 'zzz':   return `<text x="86" y="34" font-size="13" fill="#e8b45c" font-style="italic">z z</text>`;
+      case 'bigblush': return `<ellipse cx="44" cy="71" rx="6.5" ry="3.4" fill="${BLUSH}" opacity=".7"/><ellipse cx="76" cy="71" rx="6.5" ry="3.4" fill="${BLUSH}" opacity=".7"/>`;
       default: return '';
     }
   }
-  function hairBack(who, c) {
-    // 媽媽：及肩鮑伯頭，後面的頭髮蓋到下巴下面
-    if (who === 'mom') return `<path d="M33 60 q0 -32 27 -32 q27 0 27 32 l2 26 q-6 4 -12 2 l-2 -20 h-30 l-2 20 q-6 2 -12 -2z" fill="${c.hair}"/>`;
-    return '';
-  }
-  function hairFront(who, c) {
+  function hair(who, c) {
+    // 媽媽：圓臉加上兩側到下巴的短髮
     if (who === 'mom') return `
-      <path d="M35 58 q1 -27 25 -27 q22 0 25 22 q-14 -2 -22 -12 q-6 12 -28 17z" fill="${c.hair}"/>
-      <circle cx="36.5" cy="71" r="1.6" fill="#e9dcc3"/>`;
+      <path d="M28 62 a32 32 0 0 1 64 0 q-9 -14 -32 -14 q-23 0 -32 14z" fill="${c.hair}"/>
+      <path d="M28 58 q-4 26 6 34 l9 -24z M92 58 q4 26 -6 34 l-9 -24z" fill="${c.hair}"/>
+      <path d="M40 44 q14 -8 30 -3 q-10 4 -30 3z" fill="${c.hair}"/>`;
     if (who === 'kid') return `
-      <path d="M36 58 q-1 -26 24 -27 q25 1 24 27 q-5 -9 -11 -11 q-8 5 -22 3 q-9 1 -15 8z" fill="${c.hair}"/>
-      <path d="M58 31 q3 -6 9 -5 q-5 2 -5 6z" fill="${c.hair}"/>`;
+      <path d="M29 62 a31 31 0 0 1 62 0 q-6 -11 -14 -12 q-6 6 -17 4 q-11 -3 -17 2 q-9 1 -14 6z" fill="${c.hair}"/>
+      <path d="M58 30 q3 -7 10 -6 q-6 2 -6 7z" fill="${c.hair}"/>`;
     if (who === 'dad') return `
-      <path d="M36 56 q0 -24 24 -24 q24 0 24 24 q-7 -10 -24 -11 q-17 1 -24 11z" fill="${c.hair}"/>
-      <rect x="44.5" y="58.5" width="13" height="9" rx="3" fill="none" stroke="${INK}" stroke-width="1.5"/>
-      <rect x="62.5" y="58.5" width="13" height="9" rx="3" fill="none" stroke="${INK}" stroke-width="1.5"/>
-      <path d="M57.5 62 h5" stroke="${INK}" stroke-width="1.5"/>`;
+      <path d="M29 60 a31 31 0 0 1 62 0 q-8 -12 -31 -12 q-23 0 -31 12z" fill="${c.hair}"/>
+      <circle cx="49" cy="64" r="7.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
+      <circle cx="71" cy="64" r="7.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
+      <path d="M56.5 63.5 h7" stroke="${INK}" stroke-width="1.8"/>`;
     return '';
   }
   function body(who, c) {
-    if (who === 'mom') return `
-      <path d="M26 160 C26 120 38 102 60 102 C82 102 94 120 94 160Z" fill="${c.outer}"/>
-      <path d="M48 104 L60 128 L72 104 C70 103 66 102 60 102 C54 102 50 103 48 104Z" fill="${c.shirt}"/>
-      <path d="M48 104 L60 128 L60 160 L52 160 Z M72 104 L60 128 L60 160 L68 160 Z" fill="${c.shirt}" opacity=".0"/>
-      <path d="M53 108 L60 124 L67 108" stroke="${c.shirt}" stroke-width="10" fill="none" stroke-linejoin="round" opacity=".95"/>
-      <circle cx="60" cy="118" r="1.6" fill="${c.accent}"/>`;
-    if (who === 'dad') return `
-      <path d="M22 160 C22 118 36 100 60 100 C84 100 98 118 98 160Z" fill="${c.shirt}"/>
-      <path d="M50 102 L60 112 L70 102" stroke="${c.accent}" stroke-width="4" fill="none" stroke-linejoin="round"/>`;
-    // 孩子
+    if (who === 'mom') return `<rect x="30" y="92" width="60" height="80" rx="28" fill="${c.shirt}"/><path d="M52 95 q8 8 16 0" stroke="${c.accent}" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".55"/>`;
+    if (who === 'dad') return `<rect x="26" y="90" width="68" height="82" rx="30" fill="${c.shirt}"/><path d="M51 93 l9 8 l9 -8" stroke="${c.accent}" stroke-width="2.6" fill="none" stroke-linejoin="round" opacity=".6"/>`;
     const deco = c.uniform
-      ? `<path d="M52 108 L60 116 L68 108" stroke="#d9d2c4" stroke-width="3" fill="none" stroke-linejoin="round"/><path d="M58.5 116 h3 l1.2 22 -2.7 3 -2.7 -3z" fill="#3e4a5c"/>`
-      : `<path d="M52 108 q8 6 16 0" stroke="${INK}" stroke-opacity=".25" stroke-width="1.4" fill="none"/>`;
-    return `<path d="M32 160 C32 124 42 106 60 106 C78 106 88 124 88 160Z" fill="${c.shirt}"/>${deco}`;
+      ? `<path d="M52 98 l8 7 l8 -7" stroke="#cfc8bb" stroke-width="2.4" fill="none" stroke-linejoin="round"/><path d="M58.5 105 h3 l1.4 22 -2.9 3 -2.9 -3z" fill="#2a3343"/>`
+      : `<path d="M53 97 q7 6 14 0" stroke="${c.accent}" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".5"/>`;
+    return `<rect x="36" y="94" width="48" height="78" rx="24" fill="${c.shirt}"/>${deco}`;
   }
 
   MD.art = {
@@ -129,19 +116,41 @@ window.MD = window.MD || {};
       const e = EXPR[expr] || EXPR.normal;
       return `<svg viewBox="0 0 120 160" class="char-svg" aria-hidden="true">
         ${body(who, c)}
-        <rect x="54" y="84" width="12" height="20" rx="5" fill="${SKIN}"/>
-        <path d="M54 98 q6 4 12 0" stroke="#d9bfab" stroke-width="1.2" fill="none"/>
-        ${hairBack(who, c)}
-        <ellipse cx="60" cy="61" rx="24" ry="27" fill="${SKIN}"/>
-        <ellipse cx="46" cy="70" rx="4.5" ry="2.4" fill="${BLUSH}" opacity=".28"/>
-        <ellipse cx="74" cy="70" rx="4.5" ry="2.4" fill="${BLUSH}" opacity=".28"/>
+        <circle cx="60" cy="62" r="31" fill="${SKIN}"/>
+        <ellipse cx="44" cy="71" rx="5" ry="2.8" fill="${BLUSH}" opacity=".4"/>
+        <ellipse cx="76" cy="71" rx="5" ry="2.8" fill="${BLUSH}" opacity=".4"/>
         ${eyes(e.eyes)}
-        ${brows(e.brows, who)}
-        ${who !== 'kid' ? `<path d="M60 66 q-1.6 3.6 .6 4.4" stroke="#c9a892" stroke-width="1.2" fill="none" stroke-linecap="round"/>` : ''}
+        ${brows(e.brows)}
         ${mouth(e.mouth)}
-        ${hairFront(who, c)}
+        ${hair(who, c)}
         ${extra(e.extra)}
+        ${who === 'mom' ? `<circle cx="30.5" cy="76" r="1.8" fill="#f3ece2"/>` : ''}
       </svg>`;
+    },
+
+    /* 地圖上的地點標誌：圓形徽章＋線條圖示；只有家是房子 */
+    badge(id, locked) {
+      const A = { mint: '#8fc1a9', amber: '#e8b45c', coral: '#e07a5f', blue: '#8eaad0' };
+      const S = (c, w = 2.4) => `stroke="${c}" stroke-width="${w}" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
+      const ICON = {
+        tennis: [A.mint, `<ellipse cx="21" cy="21" rx="7" ry="9.5" ${S(A.mint)} transform="rotate(-35 21 21)"/><path d="M26 27 l8 8" ${S(A.mint, 3)}/><circle cx="32" cy="15" r="3.4" fill="${A.amber}"/>`],
+        cafe: [A.amber, `<path d="M14 20 h16 v7 q0 8 -8 8 q-8 0 -8 -8z" ${S(A.amber)}/><path d="M30 22 q6 0 5 5 q-1 4 -5 3" ${S(A.amber)}/><path d="M19 13 q-2 -3 0 -5 M24 13 q-2 -3 0 -5" ${S(A.amber, 1.8)}/>`],
+        market: [A.amber, `<path d="M13 21 h22 l-3 14 h-16z" ${S(A.amber)}/><path d="M18 21 q6 -10 12 0" ${S(A.amber)}/><path d="M19 26 v5 M24 26 v5 M29 26 v5" ${S(A.amber, 1.8)}/>`],
+        pool: [A.blue, `<path d="M12 22 q3 -3 6 0 t6 0 t6 0 t6 0 M12 29 q3 -3 6 0 t6 0 t6 0 t6 0" ${S(A.blue)}/><circle cx="20" cy="15" r="3" fill="${A.blue}"/>`],
+        library: [A.coral, `<path d="M15 14 v20 M21 14 v20 M28 15 l5 19" ${S(A.coral, 3.2)}/><path d="M12 35 h24" ${S(A.coral, 2)}/>`],
+        park: [A.mint, `<circle cx="24" cy="19" r="8" ${S(A.mint)}/><path d="M24 27 v9 M20 36 h8" ${S(A.mint)}/>`],
+        bookstore: [A.coral, `<path d="M12 17 q6 -3 12 1 q6 -4 12 -1 v16 q-6 -3 -12 1 q-6 -4 -12 -1z M24 18 v16" ${S(A.coral)}/>`],
+        school: [A.amber, `<path d="M13 35 v-12 l11 -7 l11 7 v12z" ${S(A.amber)}/><path d="M21 35 v-7 h6 v7 M24 16 v-6 l5 2 -5 2" ${S(A.amber, 1.8)}/>`],
+        art: [A.coral, `<path d="M24 12 q12 0 12 10 q0 5 -5 5 h-3 q-3 0 -3 3 q0 5 -4 5 q-9 0 -9 -11 q0 -12 12 -12z" ${S(A.coral)}/><circle cx="19" cy="20" r="1.8" fill="${A.amber}"/><circle cx="25" cy="17" r="1.8" fill="${A.mint}"/><circle cx="30" cy="21" r="1.8" fill="${A.blue}"/>`],
+        cram: [A.blue, `<path d="M15 33 l3 -8 l13 -13 l5 5 l-13 13z M28 15 l5 5" ${S(A.blue)}/>`],
+        clinic: [A.mint, `<rect x="13" y="13" width="22" height="22" rx="6" ${S(A.mint)}/><path d="M24 18 v12 M18 24 h12" ${S(A.coral, 3)}/>`],
+        grandma: [A.coral, `<path d="M24 10 v3 M24 35 v3" ${S(A.coral, 2)}/><ellipse cx="24" cy="24" rx="9" ry="11" ${S(A.coral)}/><path d="M17 18 h14 M17 30 h14" ${S(A.coral, 1.6)}/>`],
+        nightmarket: [A.amber, `<circle cx="24" cy="21" r="10" ${S(A.amber)}/><path d="M24 11 v20 M14 21 h20 M17 14 l14 14 M31 14 l-14 14" ${S(A.amber, 1.4)}/><path d="M19 37 l5 -6 l5 6" ${S(A.amber)}/>`],
+        beach: [A.coral, `<path d="M12 22 q12 -14 24 0z" ${S(A.coral)}/><path d="M24 22 v12" ${S(A.coral)}/><path d="M12 36 q3 -3 6 0 t6 0 t6 0 t6 0" ${S(A.blue, 2)}/>`],
+      };
+      if (id === 'home') return `<svg viewBox="0 0 48 48" class="badge-svg home"><rect x="3" y="3" width="42" height="42" rx="13" fill="${A.amber}"/><path d="M13 25 l11 -10 l11 10 v11 h-22z" fill="#1f2633"/><rect x="21" y="28" width="6" height="8" rx="1" fill="${A.amber}"/></svg>`;
+      const [col, icon] = ICON[id] || [A.mint, ''];
+      return `<svg viewBox="0 0 48 48" class="badge-svg ${locked ? 'locked' : ''}"><circle cx="24" cy="24" r="21.5" fill="#1f2633" stroke="${col}" stroke-width="2.2"/>${icon}</svg>`;
     },
 
     ball(size = 44) {
