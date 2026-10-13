@@ -10,7 +10,7 @@ window.MD = window.MD || {};
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const F = t => esc(MD.fill(t));
   const clamp = v => Math.max(0, Math.min(5, v));
-  const START_DISHES = Object.keys(MD.DISHES).filter(id => !MD.DISHES[id].from);
+  const START_DISHES = Object.keys(MD.DISHES).filter(id => !MD.DISHES[id].from && !MD.DISHES[id].stage);
 
   /* ── 畫面切換 ── */
   function show(name) {
@@ -65,13 +65,32 @@ window.MD = window.MD || {};
     kitchen: `<div class="deco d-window" style="width:40%;height:18%;top:12%"></div><div class="deco d-counter"></div><span class="deco emoji" style="right:8%;top:16%;font-size:30px">🪴</span>`,
     tvroom: `<span class="deco emoji" style="left:4%;top:52%;font-size:28px">🪴</span><span class="deco emoji" style="right:4%;top:50%;font-size:26px">🎾</span>`,
     home: `<div class="deco d-window"></div><span class="deco emoji" style="right:8%;top:16%;font-size:30px">🪴</span>`,
+    pool: `<span class="deco emoji" style="left:6%;top:14%;font-size:30px">🛟</span><span class="deco emoji" style="right:6%;top:14%;font-size:28px">🏊</span>`,
+    library: `<div class="deco d-bookwall"></div>`,
+    art: `<span class="deco emoji" style="left:6%;top:12%;font-size:34px">🖌️</span><span class="deco emoji" style="right:6%;top:14%;font-size:30px">🖼️</span>`,
+    bookstore: `<div class="deco d-bookwall"></div><span class="deco emoji" style="right:6%;top:50%;font-size:28px">☕</span>`,
+    grandma: `<span class="deco emoji" style="left:6%;top:12%;font-size:34px">🏮</span><span class="deco emoji" style="right:8%;top:14%;font-size:30px">🐈</span><span class="deco emoji" style="left:40%;top:8%;font-size:28px">🧧</span>`,
+    beach: `<span class="deco emoji" style="left:8%;top:8%;font-size:40px">☀️</span><span class="deco emoji" style="right:6%;top:14%;font-size:30px">⛱️</span>`,
+    cram: `<div class="deco d-board"></div>`,
+    clinic: `<span class="deco emoji" style="left:6%;top:12%;font-size:30px">🩺</span><span class="deco emoji" style="right:8%;top:14%;font-size:30px">🧸</span>`,
+    nightmarket: `<div class="deco d-lights"></div><span class="deco emoji" style="left:6%;top:30%;font-size:30px">🍢</span><span class="deco emoji" style="right:6%;top:30%;font-size:30px">🧋</span>`,
+    japan: `<span class="deco emoji" style="left:6%;top:56%;font-size:40px">⛩️</span><span class="deco emoji" style="right:6%;top:58%;font-size:34px">🌸</span>`,
+    fuji: `<div class="deco d-fuji"></div><span class="deco emoji" style="left:8%;top:10%;font-size:30px">🌸</span>`,
+    paris: `<span class="deco emoji" style="right:8%;top:8%;font-size:64px">🗼</span><span class="deco emoji" style="left:6%;top:56%;font-size:30px">📚</span>`,
   }[bg] || '');
 
   /* ── 狀態 ── */
   function ensureDefaults() {
     const s = MD.state;
     START_DISHES.forEach(id => { if (!s.dishes.includes(id)) s.dishes.push(id); });
+    // 長大一點，就會做新的菜
+    Object.entries(MD.DISHES).forEach(([id, d]) => { if (d.stage && MD.stageAtLeast(d.stage) && !s.dishes.includes(id)) s.dishes.push(id); });
+    document.body.dataset.stage = MD.stage();   // 讓孩子的身高、衣服跟著階段變
   }
+  // 某個地點在目前階段開放了沒
+  const placeOpen = id => { const p = MD.PLACES[id]; return !p.opens || MD.stageAtLeast(p.opens); };
+  const cardOk = id => { const c = MD.CARDS[id]; return (!c.stages || c.stages.includes(MD.stage())) && placeOpen(c.place) && (!c.weekend || isWeekend()); };
+  const placeName = id => (id === 'school' ? (MD.stage() === 'jh' ? '國中' : '小學') : MD.PLACES[id].name);
   const dow = () => (MD.state.day - 1) % 7;
   const isWeekend = () => dow() >= 5;
   // 行程卡目前的熟悉度等級
@@ -118,20 +137,26 @@ window.MD = window.MD || {};
     if (holiday) s.flags.holidayWeek = week;   // 一週最多放一次假
     const school = !we && !holiday;
     const plan = [{ slot: 'breakfast', kind: 'meal' }];
-    if (school) {
-      plan.push({ slot: 'morning', kind: 'act', card: 'school', fixed: true });
+    const jh = MD.stage() === 'jh';
+    if (school && jh) {
+      // 國中：白天整天在學校，放學後吃點心，傍晚一個行程，晚餐後還有一個（補習、功課）
+      plan.push({ slot: 'day', kind: 'act', card: 'school', fixed: true });
+      plan.push({ slot: 'snack', kind: 'meal' });
+      plan.push({ slot: 'evening', kind: 'act' });
+      plan.push({ slot: 'dinner', kind: 'meal' });
+      plan.push({ slot: 'night', kind: 'act' });
     } else {
-      plan.push({ slot: 'morning', kind: 'act' });
-      plan.push({ slot: 'lunch', kind: 'meal' });
+      if (school) plan.push({ slot: 'morning', kind: 'act', card: 'school', fixed: true });
+      else { plan.push({ slot: 'morning', kind: 'act' }); plan.push({ slot: 'lunch', kind: 'meal' }); }
+      plan.push(tennisDay ? { slot: 'pm1', kind: 'act', card: 'tennis', fixed: true } : { slot: 'pm1', kind: 'act' });
+      plan.push({ slot: 'snack', kind: 'meal' });
+      plan.push({ slot: 'pm2', kind: 'act' });
+      plan.push({ slot: 'evening', kind: 'act' });
+      plan.push({ slot: 'dinner', kind: 'meal' });
     }
-    plan.push(tennisDay ? { slot: 'pm1', kind: 'act', card: 'tennis', fixed: true } : { slot: 'pm1', kind: 'act' });
-    plan.push({ slot: 'snack', kind: 'meal' });
-    plan.push({ slot: 'pm2', kind: 'act' });
-    plan.push({ slot: 'evening', kind: 'act' });
-    plan.push({ slot: 'dinner', kind: 'meal' });
     s.kid = { full: 1, energy: 4 };
     // Ethan 今天的心願（只挑已經做得到的）
-    const wishes = MD.WISHES.filter(w => w.type === 'card' || s.dishes.includes(w.id));
+    const wishes = MD.WISHES.filter(w => (!w.stages || w.stages.includes(MD.stage())) && (w.type === 'card' ? cardOk(w.id) : s.dishes.includes(w.id)));
     const wish = Object.assign({ done: false }, pick(wishes));
     // 前一天晚上準備好的便當（上學日才帶）
     const bento = school ? s.nextBento : null;
@@ -144,13 +169,15 @@ window.MD = window.MD || {};
   function recommendCards() {
     const s = MD.state, t = s.today;
     const used = usedCards();
-    const cands = Object.keys(MD.CARDS).filter(id => !MD.CARDS[id].noRec && !used.includes(id));
+    const cands = Object.keys(MD.CARDS).filter(id => !MD.CARDS[id].noRec && !used.includes(id) && cardOk(id));
     return cands.map(id => {
       const c = MD.CARDS[id], v = s.placeVisits[id] || 0;
       let sc = 1 + 2 / (v + 1) + Math.random() * 1.2;
       if (s.kid.energy <= 2 && c.calm) sc += 2;
       if (s.kid.energy >= 4 && !c.calm) sc += .6;
       if (id === 'market' && s.ingredients.length < Object.keys(MD.INGREDIENTS).length) sc += .4;
+      if (c.rare) sc -= 1.8;                          // 看醫生不要太常出現
+      if (MD.stage() === 'jh' && id === 'cram') sc += .8;
       const last = (s.placeLast || {})[id] || -9;
       if (last >= s.day - 1) sc -= 2.6;        // 昨天去過的，今天換個地方
       else if (last >= s.day - 2) sc -= 1;
@@ -312,23 +339,23 @@ window.MD = window.MD || {};
   }
 
   /* ════════════════ 地圖 ════════════════ */
-  const ROW_ROAD = y => y + 9;
+  const ROW_ROAD = y => y + 8;
   function renderMap() {
     const s = MD.state, t = s.today;
-    const roadsY = [13, 36, 59, 82].map(ROW_ROAD);
+    const roadsY = [9, 28, 47, 66, 85].map(ROW_ROAD);
     $('map').innerHTML = `
       <svg class="roads" viewBox="0 0 100 100" preserveAspectRatio="none">
         ${roadsY.map(y => `<line x1="6" y1="${y}" x2="94" y2="${y}"/>`).join('')}
-        <line x1="34" y1="${roadsY[0]}" x2="34" y2="${roadsY[3]}"/><line x1="66" y1="${roadsY[0]}" x2="66" y2="${roadsY[3]}"/>
+        <line x1="34" y1="${roadsY[0]}" x2="34" y2="${roadsY[4]}"/><line x1="66" y1="${roadsY[0]}" x2="66" y2="${roadsY[4]}"/>
       </svg>
-      ${Object.entries(MD.PLACES).map(([id, p]) => `
-        <button class="place ${p.locked ? 'locked' : ''}" data-id="${id}" style="left:${p.pos[0]}%;top:${p.pos[1]}%">
-          ${MD.art.building(p, p.locked)}
-          <span class="place-icon">${p.locked ? '🔒' : p.icon}</span>
-          <span class="place-name">${p.name}</span>
-        </button>`).join('')}
-      <span class="tree" style="left:4%;top:44%">🌳</span><span class="tree" style="left:94%;top:68%">🌲</span>
-      <span class="tree" style="left:30%;top:2%">🌸</span><span class="tree" style="left:68%;top:46%">🌷</span>
+      ${Object.entries(MD.PLACES).map(([id, p]) => { const lk = !placeOpen(id); return `
+        <button class="place ${lk ? 'locked' : ''}" data-id="${id}" style="left:${p.pos[0]}%;top:${p.pos[1]}%">
+          ${MD.art.building(p, lk)}
+          <span class="place-icon">${lk ? '🔒' : p.icon}</span>
+          <span class="place-name">${placeName(id)}</span>
+        </button>`; }).join('')}
+      <span class="tree" style="left:4%;top:37%">🌳</span><span class="tree" style="left:96%;top:75%">🌲</span>
+      <span class="tree" style="left:34%;top:1%">🌸</span><span class="tree" style="left:66%;top:56%">🌷</span>
       <div class="walkers" id="walkers"><div class="w-mom">${MD.art.char('mom', 'smile')}</div><div class="w-kid">${MD.art.char('kid', 'happy')}</div><div class="w-bubble" id="w-bubble"></div></div>
       <div class="pin" id="pin">👇</div>`;
     placeWalkers(t.at, false);
@@ -344,7 +371,7 @@ window.MD = window.MD || {};
       const icon = x.kind === 'meal' ? MD.DISHES[x.dish].icon : MD.CARDS[x.card].icon;
       return `<span class="step ${i < t.idx ? 'done' : i === t.idx ? 'now' : ''}"><i>${icon}</i><small>${MD.SLOTS[x.slot].name}</small></span>`;
     }).join('');
-    $('map-day').innerHTML = `第 ${MD.state.day} 天・${MD.WEEKDAYS[dow()]}`;
+    $('map-day').innerHTML = `${MD.GRADE_NAMES[MD.grade()]}・${MD.WEEKDAYS[dow()]}`;
     renderMian();
   }
 
@@ -364,7 +391,7 @@ window.MD = window.MD || {};
   function kidBubble(text) {
     const b = $('w-bubble'); if (!b) return;
     const k = MD.state.kid;
-    const line = text ?? (k.full <= 1 ? pick(MD.LINES.hungry) : k.energy <= 1 ? pick(MD.LINES.tired) : '');
+    const line = text ?? (k.full <= 1 ? MD.line('hungry') : k.energy <= 1 ? MD.line('tired') : '');
     b.textContent = F(line);
     b.style.display = line ? '' : 'none';
   }
@@ -388,10 +415,11 @@ window.MD = window.MD || {};
     w.classList.add('walking');
     w.classList.toggle('solo', solo);
     const steps = setInterval(() => { if (w.classList.contains('walking') && MD.audio) MD.audio.sfx('step'); }, 330);
-    if (solo) kidBubble(''); else kidBubble(pick(Math.random() < .6 && MD.LINES.arrive[id] ? MD.LINES.arrive[id] : MD.LINES.arrive.any));
+    const A = MD.LINES.common.arrive, own = (MD.LINES[MD.stage()] || {}).arrive || [];
+    if (solo) kidBubble(''); else kidBubble(pick(Math.random() < .55 && A[id] ? A[id] : [...own, ...A.any]));
     const map = $('map'), W = map.clientWidth, H = map.clientHeight;
     let cx = x1, cy = y1;
-    const stopAt = t.idx > 0 && Math.random() < .3 ? 1 : -1;
+    const stopAt = !solo && t.idx > 0 && Math.random() < .3 ? 1 : -1;
     for (let i = 0; i < pts.length; i++) {
       const [nx, ny] = pts[i];
       const dist = Math.hypot((nx - cx) * W / 100, (ny - cy) * H / 100);
@@ -405,14 +433,23 @@ window.MD = window.MD || {};
     }
     w.classList.remove('walking');
     clearInterval(steps);
-    kidBubble();
     t.at = id;
+    if (solo && t.kidAway && id !== 'cafe') {
+      // 孩子已經在這裡等了
+      t.kidAway = false;
+      w.classList.remove('solo');
+      w.classList.add('kid-pop');
+      setTimeout(() => w.classList.remove('kid-pop'), 600);
+      kidBubble(MD.line('kidThere'));
+      await wait(1300);
+    }
+    kidBubble();
   }
 
   /* 路上的小插曲：點一下才繼續走 */
   function walkStop() {
     return new Promise(resolve => {
-      const ev = pick(MD.LINES.walkStop);
+      const ev = pick(MD.LINES.common.walkStop);
       const w = $('walkers');
       w.classList.remove('walking');
       kidBubble(ev.line);
@@ -427,7 +464,7 @@ window.MD = window.MD || {};
   async function onPlace(id) {
     if (busy) return;
     const s = MD.state, t = s.today, p = MD.PLACES[id];
-    if (p.locked) { MD.ui.toast(`${p.icon} ${p.name}・即將開放`); return; }
+    if (!placeOpen(id)) { MD.ui.toast(`${p.icon} ${p.name}・${MD.STAGES[p.opens].name}開放`); return; }
     const x = t.plan[t.idx];
     if (!x) return;
     if (id !== itemPlace(x)) {
@@ -438,6 +475,8 @@ window.MD = window.MD || {};
     busy = true;
     try { await runItem(x); }
     finally { busy = false; }
+    const nx = t.plan[t.idx];
+    if (nx && itemPlace(nx) === t.at && MD.state.today === t) { await wait(500); onPlace(t.at); }
   }
 
   async function runItem(x) {
@@ -447,7 +486,7 @@ window.MD = window.MD || {};
 
     if (x.kind === 'meal') {
       const d = MD.DISHES[x.dish];
-      if (x.slot !== 'snack') await walkTo('home');
+      if (x.slot !== 'snack' || t.at === 'cafe') await walkTo('home', !!t.kidAway);
       if (x.slot === 'dinner' && (MD.DAY_EVENTS[s.day]?.family || Math.random() < .5) && !t.familyDone) {
         t.familyDone = true;
         merge(await MD.ACTS.family());
@@ -457,7 +496,7 @@ window.MD = window.MD || {};
       merge(await MD.ACTS[fn](ctx));
       s.kid.full = clamp(s.kid.full + (x.slot === 'snack' ? 1 : x.slot === 'dinner' ? 3 : 2));
       for (const k of d.nut) t.nut[k]++;
-      if (x.slot === 'dinner' && s.day % 7 >= 0 && ((s.day) % 7) < 5 && !s.nextBento) {
+      if (x.slot === 'dinner' && (s.day % 7) < 5 && s.day < 63 && !s.nextBento) {
         const r = await MD.ACTS.bentoNight({ dish: x.dish, today: t });
         merge(r);
         s.nextBento = r.bento;
@@ -465,10 +504,11 @@ window.MD = window.MD || {};
     } else {
       const c = MD.CARDS[x.card];
       if (x.card === 'school' && t.at === 'home' && MD.hasTrait('adhd') && (s.day === 1 || Math.random() < .35)) merge(await MD.ACTS.shoes());
-      await walkTo(c.place, x.card === 'cafe');
+      await walkTo(c.place, x.card === 'cafe' || !!t.kidAway);
       const lv = cardLevel(x.card);
       const fed = s.kid.full >= 2;
       merge(await MD.ACTS[pickAct(x.card)]({ today: t }));
+      if (x.card === 'cafe') t.kidAway = true;   // 媽媽喝完咖啡，自己走到下一站
       s.placeVisits[x.card] = (s.placeVisits[x.card] || 0) + 1;
       (s.placeLast = s.placeLast || {})[x.card] = s.day;
       if (x.card === 'school' && t.bento && t.bento.dish) {   // 中午吃了便當
@@ -497,7 +537,7 @@ window.MD = window.MD || {};
     t.idx++;
     MD.save();
     renderStrip(); updatePin(); kidBubble();
-    if (t.idx >= t.plan.length) { await wait(400); await walkTo('home'); showNight(); }
+    if (t.idx >= t.plan.length) { await wait(400); await walkTo('home', !!t.kidAway); showNight(); }
   }
 
   function openMap() {
@@ -537,6 +577,16 @@ window.MD = window.MD || {};
       MD.audio && MD.audio.sfx('fanfare');
       await MD.ui.popup(`<p class="label">${MD.art.mian(20)} 綿累積到 ${m.at}</p><div class="big-icon">${m.icon}</div><h3>${esc(m.title)}</h3><p class="tap">點一下繼續</p>`);
     }
+    // 每個年級的最後一天：升上下一個年級，門框多一道刻度
+    if (s.day % MD.DAYS_PER_GRADE === 0 && s.day < 63 && !s.flags['grade' + s.day]) {
+      s.flags['grade' + s.day] = true;
+      const g = MD.gradeOf(s.day + 1);
+      s.heightMarks++;
+      s.memories.push({ id: 'grade-' + g, icon: '📏', title: '升上' + MD.GRADE_NAMES[g], day: s.day });
+      MD.save();
+      MD.audio && MD.audio.sfx('fanfare');
+      await MD.ui.popup(`<p class="label">又長大了一歲</p><div class="big-icon">📏</div><h3>升上${MD.GRADE_NAMES[g]}</h3><p class="mem">${F(MD.GRADE_UP[g] || '')}</p><p class="tap">門框上又多了一道刻度・點一下繼續</p>`);
+    }
     if (MD.DAY_EVENTS[s.day]?.letter && !s.flags['letter' + s.day]) {
       s.flags['letter' + s.day] = true;
       s.memories.push({ id: 'letter' + s.day, icon: '💌', title: '枕頭邊的信', day: s.day });
@@ -548,7 +598,8 @@ window.MD = window.MD || {};
   function renderNight() {
     const s = MD.state, t = s.today;
     const balanced = t.nut.c && t.nut.p && t.nut.v;
-    const line = MD.DAY_EVENTS[s.day]?.nightLine || MD.LINES.night[(s.day - 1) % MD.LINES.night.length];
+    const line = t.nightLine || MD.DAY_EVENTS[s.day]?.nightLine || MD.line('night');
+    t.nightLine = line;
     const last = s.fridge[s.fridge.length - 1];
     $('night-body').innerHTML = `
       <div class="night-sky">${Array.from({ length: 12 }, (_, i) => `<span style="left:${(i * 37) % 95}%;top:${(i * 53) % 60}%;animation-delay:${i * .3}s">✦</span>`).join('')}<span class="moon">🌙</span></div>
@@ -579,6 +630,9 @@ window.MD = window.MD || {};
 
   function startDay() {
     const s = MD.state;
+    ensureDefaults();
+    const special = !s.flags.ended && MD.SPECIAL_DAYS[s.day];
+    if (special && (!s.today || !s.today.nightDone)) return runSpecial(special);
     if (!s.today) { s.today = newToday(); MD.save(); }
     if (s.today.nightDone) return renderNight();
     if (!s.today.confirmed) return openPlan();
@@ -586,8 +640,59 @@ window.MD = window.MD || {};
     openMap();
   }
 
+  const SPECIAL_INFO = {
+    exam: { title: '國中會考', icon: '📝', night: '……媽，今天謝謝你。我先睡了。（他睡得很沉）' },
+    graduation: { title: '畢業典禮', icon: '🎓', night: '媽，我們明天要出發了。……我好期待。' },
+    trip: { title: '全家旅行', icon: '✈️', night: '媽，這是我這輩子最棒的旅行。' },
+    finale: { title: '回到家', icon: '🏠' },
+  };
+  async function runSpecial(kind) {
+    const s = MD.state, info = SPECIAL_INFO[kind];
+    s.today = { special: kind, plan: [], idx: 0, earned: 0, nut: { c: 1, p: 1, v: 1 }, at: 'home', confirmed: true, drawings: [], memories: [], nightLine: info.night };
+    MD.save();
+    show('map-screen');
+    renderMap();
+    $('day-strip').innerHTML = `<span class="step now"><i>${info.icon}</i><small>${info.title}</small></span>`;
+    await MD.ui.popup(`<p class="label">特別的一天</p><div class="big-icon">${info.icon}</div><h3>${info.title}</h3><p class="tap">點一下開始</p>`);
+    const r = await MD.ACTS[kind === 'exam' ? 'examDay' : kind]({ today: s.today }) || {};
+    s.mian += r.mian || 0; s.today.earned += r.mian || 0;
+    if (r.memory) s.today.memories.push(r.memory);
+    if (r.drawing) s.today.drawings.push(r.drawing);
+    MD.ACTS.closeScene();
+    if (kind === 'finale') {
+      s.today.memories.forEach(m => { if (!s.memories.find(x => x.id === m.id)) s.memories.push({ ...m, day: s.day }); });
+      s.flags.ended = true;
+      s.today.nightDone = true;
+      MD.save();
+      return showEnding();
+    }
+    showNight();
+  }
+
+  function showEnding() {
+    const s = MD.state;
+    $('night-body').innerHTML = `
+      <div class="night-sky">${Array.from({ length: 16 }, (_, i) => `<span style="left:${(i * 37) % 95}%;top:${(i * 53) % 60}%;animation-delay:${i * .3}s">✦</span>`).join('')}<span class="moon">🌙</span></div>
+      <div class="ending">
+        <div class="end-family">${MD.art.char('mom', 'happy')}${MD.art.char('dad', 'happy')}${MD.art.char('kid', 'smile')}</div>
+        <h2>我的寶貝事業</h2>
+        <p>這些年，你帶著他走過 ${s.day} 天。<br>累積了 ${s.mian} 綿、${s.memories.length} 個回憶、${s.fridge.length} 張冰箱上的畫。</p>
+        <p class="end-thanks">謝謝你，一直是他的撿球搭檔。</p>
+        <div class="night-btns">
+          <button class="btn primary" id="e-album">📔 翻翻回憶</button>
+          <button class="btn" id="e-free">繼續自由遊玩</button>
+          <button class="btn" id="e-new">從一年級重新開始</button>
+        </div>
+      </div>`;
+    show('night');
+    $('e-album').onclick = openAlbum;
+    $('e-free').onclick = () => { s.day++; s.today = null; MD.save(); startDay(); };
+    $('e-new').onclick = newGame;
+  }
+
   /* ════════════════ 首頁 / 相簿 / 冰箱 / 設定 ════════════════ */
   function goTitle() {
+    MD.ACTS.cancelAll();
     $('scene').className = 'overlay'; $('scene').innerHTML = '';
     $('popup').classList.remove('show');
     MD.ui.closeSheet();
@@ -602,7 +707,7 @@ window.MD = window.MD || {};
     $('btn-new').textContent = has ? '從頭開始' : '開始';
     $('btn-new').className = has ? 'btn' : 'btn primary';
     let prog = '';
-    if (has) prog = `第 ${s.day} 天・${MD.WEEKDAYS[dow()]}・累積 ${s.mian} ${MD.POINT}`;
+    if (has) prog = `${MD.GRADE_NAMES[MD.grade()]}・${MD.WEEKDAYS[dow()]}・累積 ${s.mian} ${MD.POINT}`;
     $('title-progress').innerHTML = esc(prog);
   }
 
@@ -702,6 +807,7 @@ window.MD = window.MD || {};
   function init() {
     MD.state = MD.load();
     ensureDefaults();
+    if (MD.state.flags.ended && MD.state.today && MD.state.today.special === 'finale') { /* 已完結，首頁照常 */ }
     $('title-art').innerHTML = MD.art.duo();
     $('btn-continue').onclick = startDay;
     $('btn-new').onclick = newGame;

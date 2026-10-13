@@ -60,3 +60,17 @@ MD.pick = function (arr) {
   store[key] = seen;
   return arr[i];
 };
+
+/* ── 成長階段 ── 第幾年級、哪個階段（low / mid / high / jh） */
+MD.gradeOf = day => Math.min(9, Math.floor((day - 1) / 7) + 1);
+MD.stageOf = g => (g <= 2 ? 'low' : g <= 4 ? 'mid' : g <= 6 ? 'high' : 'jh');
+MD.grade = () => MD.gradeOf(MD.state ? MD.state.day : 1);
+MD.stage = () => MD.stageOf(MD.grade());
+MD.stageAtLeast = st => MD.STAGE_ORDER.indexOf(MD.stage()) >= MD.STAGE_ORDER.indexOf(st);
+
+/* 依目前階段挑一句台詞（階段專屬的 + 共用的） */
+MD.line = function (key) {
+  const own = (MD.LINES[MD.stage()] || {})[key] || [];
+  const common = MD.LINES.common[key] || [];
+  return MD.pick([...own, ...common]);
+};

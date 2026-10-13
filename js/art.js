@@ -16,6 +16,13 @@ window.MD = window.MD || {};
     dad: { hair: '#55504d', shirt: '#bcd0ec', accent: '#8fa6c9' },
   };
 
+  // 孩子的樣子依成長階段變化：低年級薄荷綠、中年級天空藍、高年級黃色、國中白襯衫制服
+  const KID_LOOK = { low: '#bfe5d3', mid: '#bfe0ff', high: '#ffe4a8', jh: '#ffffff' };
+  function kidLook() {
+    const st = (MD.stage && MD.state) ? MD.stage() : 'low';
+    return Object.assign({}, CHAR.kid, { shirt: KID_LOOK[st], uniform: st === 'jh' });
+  }
+
   // 表情 → 眼睛 / 嘴巴 / 眉毛 / 額外效果
   const EXPR = {
     normal:    { eyes: 'dot',   mouth: 'smile' },
@@ -104,7 +111,8 @@ window.MD = window.MD || {};
     const w = who === 'dad' ? 80 : who === 'kid' ? 58 : 66;
     const x = 60 - w / 2;
     let deco = '';
-    if (who === 'kid') deco = `<circle cx="60" cy="132" r="7" fill="${c.accent}" stroke="#b9c24c" stroke-width="1.5"/><path d="M54 130 q6 4 12 0" stroke="#fff" stroke-width="1.5" fill="none"/>`;
+    if (who === 'kid' && c.uniform) deco = `<path d="M50 112 l10 10 10 -10" stroke="#3d4f8a" stroke-width="4" fill="none" stroke-linecap="round"/><rect x="57" y="120" width="6" height="20" rx="2" fill="#3d4f8a"/>`;
+    else if (who === 'kid') deco = `<circle cx="60" cy="132" r="7" fill="${c.accent}" stroke="#b9c24c" stroke-width="1.5"/><path d="M54 130 q6 4 12 0" stroke="#fff" stroke-width="1.5" fill="none"/>`;
     if (who === 'mom') deco = `<path d="M50 112 l10 10 10 -10" stroke="${c.accent}" stroke-width="3" fill="none" stroke-linecap="round"/>`;
     if (who === 'dad') deco = `<path d="M52 112 l8 8 8 -8" stroke="${c.accent}" stroke-width="3" fill="none"/><rect x="58" y="120" width="4" height="22" fill="${c.accent}"/>`;
     return `<path d="M${x} 160 v-30 q0 -24 ${w / 2} -24 q${w / 2} 0 ${w / 2} 24 v30z" fill="${c.shirt}" stroke="${INK}" stroke-width="2.4" stroke-opacity=".25"/>${deco}`;
@@ -112,7 +120,7 @@ window.MD = window.MD || {};
 
   MD.art = {
     char(who, expr) {
-      const c = CHAR[who] || CHAR.kid;
+      const c = who === 'kid' ? kidLook() : (CHAR[who] || CHAR.kid);
       const e = EXPR[expr] || EXPR.normal;
       const eyeY = who === 'dad' ? 64 : 64;
       return `<svg viewBox="0 0 120 160" class="char-svg" aria-hidden="true">

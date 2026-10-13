@@ -8,10 +8,13 @@ window.MD = window.MD || {};
   const $scene = () => document.getElementById('scene');
   const rand = (a, b) => a + Math.random() * (b - a);
   const pick = arr => MD.pick(arr);
-  const wait = ms => new Promise(r => setTimeout(r, ms));
+  // 回首頁時把進行中的場景作廢：之後的等待都不會再繼續（避免舊場景又跳出來）
+  let GEN = 0;
+  const wait = ms => { const g = GEN; return new Promise(r => setTimeout(() => { if (g === GEN) r(); }, ms)); };
   const buzz = ms => { if (MD.state.settings.vibrate && navigator.vibrate) navigator.vibrate(ms); };
   const F = t => MD.fill(t);
   const S = name => MD.audio && MD.audio.sfx(name);
+  const esc = t => String(t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   /* ── 共用 ── */
   function open(bg, title, hint) {
@@ -360,41 +363,33 @@ window.MD = window.MD || {};
     return { mian: 2 + st };
   }
 
-  /* ── 小學：接放學 ──
-   * 每天的情境不一樣（輪流，不會連續重複）：
-   *   greet 看肢體語言選抱抱或擊掌／show 他有東西要給你看／quiet 今天不太開心
-   *   handshake 他發明了秘密握手／forgot 東西又忘在教室
+  /* ── 學校：接放學 ──
+   * 情境依成長階段輪流（見 MD.PICKUPS），不會連續重複。國中時他會開始害羞、有自己的世界。
    */
-  const PICKUPS = ['greet', 'show', 'quiet', 'handshake', 'forgot'];
+  const FRIENDS = ['小宇', '阿哲', '小米', '凱凱', '安安'];
   async function school(ctx) {
-    const { field, foot } = open('class', '放學了', '');
+    const st = MD.stage();
+    const { field, foot } = open('class', st === 'jh' ? '放學了（國中）' : '放學了', '');
     const t = ctx.today || {};
     const s = MD.state;
     const last = s.flags.lastPickup;
-    // 安靜的那種不要太常出現
-    const pool = PICKUPS.filter(p => p !== last && !(p === 'quiet' && s.flags.lastQuiet >= s.day - 3));
+    const pool = MD.PICKUPS[st].filter(p => p !== last && !(p === 'quiet' && s.flags.lastQuiet >= s.day - 3));
     const kind = pick(pool);
     s.flags.lastPickup = kind;
     if (kind === 'quiet') s.flags.lastQuiet = s.day;
     let mian = 3;
+    const memo = (id, icon, title) => { if (!s.flags['m_' + id]) { s.flags['m_' + id] = true; t.memories && t.memories.push({ id, icon, title }); } };
+    const enter = (expr, line, opts) => { const k = kid(field, expr, line, opts); k.classList.add('run-in'); return k; };
 
     if (kind === 'greet') {
       const wantsHug = MD.hasTrait('asperger') ? Math.random() < .45 : Math.random() < .75;
-      const k = kid(field, wantsHug ? 'sparkle' : 'think', '', { cls: wantsHug ? 'arms-open' : 'stiff' });
-      k.classList.add('run-in');
+      enter(wantsHug ? 'sparkle' : 'think', '', { cls: wantsHug ? 'arms-open' : 'stiff' });
       await wait(900);
       say(field, wantsHug ? pick(['媽媽——！', '我在這裡！！', '媽媽我好想你！']) : pick(['……（小步小步地走過來）', '……（低著頭走過來）', '……（慢慢地走，一直看地上的線）']));
       const v = await choose(foot, [{ icon: '🤗', label: '抱抱', v: 'hug' }, { icon: '✋', label: '擊掌', v: 'five' }]);
-      if ((v === 'hug') === wantsHug) {
-        kid(field, 'happy', wantsHug ? pick(['（整個人撲過來）', '（抱住你的腰，不放開）']) : pick(['啪！（剛剛好的力氣）', '啪！今天的擊掌是 100 分。']));
-        hearts(field, 10); buzz([20, 40, 20]); mian = 5;
-      } else if (v === 'hug') {
-        kid(field, 'shy', pick(['……今天擊掌就好。', '……抱抱可以等一下嗎？']));
-        await wait(1100); say(field, '啪。（他還是笑了）');
-      } else {
-        kid(field, 'surprised', '……要抱抱啦！');
-        await wait(900); kid(field, 'happy', '（衝過來抱住你的腿）'); hearts(field, 6);
-      }
+      if ((v === 'hug') === wantsHug) { kid(field, 'happy', wantsHug ? pick(['（整個人撲過來）', '（抱住你的腰，不放開）']) : pick(['啪！（剛剛好的力氣）', '啪！今天的擊掌是 100 分。'])); hearts(field, 10); buzz([20, 40, 20]); mian = 5; }
+      else if (v === 'hug') { kid(field, 'shy', pick(['……今天擊掌就好。', '……抱抱可以等一下嗎？'])); await wait(1100); say(field, '啪。（他還是笑了）'); }
+      else { kid(field, 'surprised', '……要抱抱啦！'); await wait(900); kid(field, 'happy', '（衝過來抱住你的腿）'); hearts(field, 6); }
     } else if (kind === 'show') {
       const item = pick([
         { icon: '🎨', what: '一張畫', yay: '這是我們家。爸爸是那個圓圓的。', ask: '這是你在煮飯，旁邊那個是鍋子在唱歌。' },
@@ -402,27 +397,26 @@ window.MD = window.MD || {};
         { icon: '🐛', what: '一個小盒子', yay: '是毛毛蟲！我要叫牠阿根廷龍。', ask: '牠在操場的葉子上。我問過牠了，牠說可以來我們家。' },
         { icon: '💯', what: '一張考卷', yay: '100 分！我每個字都寫在格子裡面。', ask: '最後一題我寫了兩次，因為第一次不夠漂亮。' },
         { icon: '🌰', what: '一顆橡實', yay: '這是全世界最圓的橡實。送你。', ask: '我在樹下找了一整個下課。它是第 37 顆，最好的一顆。' },
+        { icon: '🏅', what: '一個獎牌', yay: '跳繩比賽第三名！我跳了 87 下！', ask: '其實我數了，是 88 下，老師數錯了。但沒關係。' },
+        { icon: '🧪', what: '一個瓶子', yay: '自然課做的！裡面是會長出結晶的水。', ask: '要放在窗邊三天。我會每天檢查。每一個小時。' },
       ]);
-      const k = kid(field, 'sparkle', `媽媽你看！我有${item.what}！`); k.classList.add('run-in');
+      enter('sparkle', `媽媽你看！我有${item.what}！`);
       const it = document.createElement('div'); it.className = 'show-item'; it.textContent = item.icon; field.appendChild(it);
       await wait(1000);
       const v = await choose(foot, [{ icon: '🤩', label: '哇，好厲害！', v: 'yay' }, { icon: '👂', label: '跟我說說看', v: 'ask' }]);
-      kid(field, v === 'yay' ? 'happy' : 'sparkle', item[v]);
-      hearts(field, 6); mian = 4;
-      if (item.icon === '🎨') t.drawings && t.drawings.push('family');
+      kid(field, v === 'yay' ? 'happy' : 'sparkle', item[v]); hearts(field, 6); mian = 4;
     } else if (kind === 'quiet') {
-      const k = kid(field, 'sad', ''); k.classList.add('run-in');
+      enter('sad', '');
       await wait(900);
-      say(field, pick(['……今天有人說我講話很奇怪。', '……我在下課的時候，一個人。', '……老師說我太大聲了。我不知道怎麼小聲。']));
+      say(field, st === 'jh' ? pick(['……今天在班上，好像沒有人懂我在說什麼。', '……我不想講。', '……分組的時候，我又是最後一個。']) : pick(['……今天有人說我講話很奇怪。', '……我在下課的時候，一個人。', '……老師說我太大聲了。我不知道怎麼小聲。']));
       const v = await choose(foot, [{ icon: '🤗', label: '先抱一下', v: 'hug' }, { icon: '🍦', label: '去吃冰淇淋', v: 'ice' }, { icon: '👂', label: '我在聽', v: 'listen' }]);
-      if (v === 'hug') { kid(field, 'cry', '……（把臉埋在你的衣服裡，很久）'); await wait(1600); kid(field, 'smile', '……好了。我好一點了。'); }
-      else if (v === 'ice') { kid(field, 'think', '……草莓口味的？'); await wait(1300); kid(field, 'smile', '吃到一半他說：「我覺得我講話不奇怪，是很特別。」'); }
-      else { kid(field, 'think', '……（走了一段路，才開始慢慢說）'); await wait(1600); kid(field, 'smile', '說完以後，他牽住你的手，比平常更用力。'); }
+      if (v === 'hug') { kid(field, 'cry', st === 'jh' ? '……（沒有推開你。過了很久才說：好了）' : '……（把臉埋在你的衣服裡，很久）'); await wait(1600); kid(field, 'smile', '……好了。我好一點了。'); }
+      else if (v === 'ice') { kid(field, 'think', '……草莓口味的？'); await wait(1300); kid(field, 'smile', '吃到一半他說：「我覺得我不奇怪，是很特別。」'); }
+      else { kid(field, 'think', '……（走了一段路，才開始慢慢說）'); await wait(1600); kid(field, 'smile', '說完以後，他靠著你走，比平常更近。'); }
       hearts(field, 5); mian = 5;
-      const first = !s.flags.quietMemo; s.flags.quietMemo = true;
-      if (first) t.memories && t.memories.push({ id: 'quiet-day', icon: '🌧️', title: '不太開心的那天，你一直都在' });
+      memo('quiet-day', '🌧️', '不太開心的那天，你一直都在');
     } else if (kind === 'handshake') {
-      const k = kid(field, 'sparkle', '媽媽！我發明了一個秘密握手！看好喔！'); k.classList.add('run-in');
+      enter('sparkle', '媽媽！我發明了一個秘密握手！看好喔！');
       const G = ['✋', '👊', '👍', '✌️'];
       const seq = [pick(G), pick(G), pick(G)];
       const show = document.createElement('div'); show.className = 'show-item seq'; field.appendChild(show);
@@ -434,11 +428,7 @@ window.MD = window.MD || {};
         const got = [];
         await new Promise(res => {
           foot.innerHTML = '';
-          G.forEach(g => {
-            const b = document.createElement('button'); b.className = 'big-choice'; b.innerHTML = `<span>${g}</span>`;
-            b.onclick = () => { got.push(g); show.textContent = got.join(' '); if (got.length === 3) res(); };
-            foot.appendChild(b);
-          });
+          G.forEach(g => { const b = document.createElement('button'); b.className = 'big-choice'; b.innerHTML = `<span>${g}</span>`; b.onclick = () => { got.push(g); show.textContent = got.join(' '); if (got.length === 3) res(); }; foot.appendChild(b); });
         });
         foot.innerHTML = '';
         ok = got.join() === seq.join();
@@ -446,15 +436,64 @@ window.MD = window.MD || {};
       }
       kid(field, ok ? 'sparkle' : 'happy', ok ? '一模一樣！這是我們兩個人的秘密。' : '沒關係，明天再練。爸爸也還不會。');
       hearts(field, ok ? 10 : 4); mian = ok ? 5 : 3;
-    } else {
-      const lost = pick([{ icon: '🧥', name: '外套' }, { icon: '💧', name: '水壺' }, { icon: '📒', name: '聯絡簿' }, { icon: '🧢', name: '帽子' }]);
-      const k = kid(field, 'happy', '媽媽！'); k.classList.add('run-in');
+    } else if (kind === 'forgot') {
+      const lost = pick([{ icon: '🧥', name: '外套' }, { icon: '💧', name: '水壺' }, { icon: '📒', name: '聯絡簿' }, { icon: '🧢', name: '帽子' }, { icon: '🎒', name: '餐袋' }]);
+      enter('happy', '媽媽！');
       await wait(900);
       say(field, `老師拿著${lost.name}追出來：「${F('{kid}')}，你的${lost.name}！」`);
       const it = document.createElement('div'); it.className = 'show-item'; it.textContent = lost.icon; field.appendChild(it);
       const v = await choose(foot, [{ icon: '🙏', label: '謝謝老師', v: 'thanks' }, { icon: '😅', label: '又來了～', v: 'again' }]);
       kid(field, 'think', v === 'thanks' ? `……我的${lost.name}自己跑出來了。` : `${lost.name}比較喜歡學校，所以想留下來。`);
-      await wait(1200); say(field, '（這已經是這個月第 4 次了）'); mian = 3;
+      await wait(1200); say(field, pick(['（這已經是這個月第 4 次了）', '（上禮拜是另一隻鞋子）', '（老師笑著揮揮手）']));
+    } else if (kind === 'friend') {
+      const name = pick(FRIENDS);
+      enter('happy', st === 'jh' ? `媽，這是${name}。` : `媽媽！這是${name}！他也喜歡${pick(['網球', '恐龍', '星星', '樂高'])}！`);
+      const it = document.createElement('div'); it.className = 'show-item'; it.textContent = '🧒'; field.appendChild(it);
+      await wait(1000);
+      const v = await choose(foot, [{ icon: '👋', label: '你好呀', v: 'hi' }, { icon: '🍪', label: '要一起吃點心嗎？', v: 'snack' }]);
+      if (v === 'hi') say(field, `${name}：「${F('{kid}')}媽媽好！${F('{kid}')}說你做的飯糰是世界第一。」`);
+      else say(field, `${name}：「真的可以嗎！」　${F('{kid}')}：「我媽很會做點心。」（偷偷驕傲）`);
+      await wait(1800); kid(field, 'sparkle', st === 'jh' ? `……媽，${name}下次可以來我們家嗎？` : `我們說好明天下課一起玩！`);
+      hearts(field, 6); mian = 4;
+      memo('first-friend', '🧒', `${F('{kid}')}帶${name}來給你認識`);
+    } else if (kind === 'cool') {
+      enter('normal', '');
+      await wait(900);
+      say(field, '（他跟同學一起走出校門，看到你，假裝沒看到）');
+      const v = await choose(foot, [{ icon: '👋', label: '大力揮手', v: 'wave' }, { icon: '📱', label: '傳訊息給他', v: 'msg' }, { icon: '🚶', label: '在轉角等', v: 'corner' }]);
+      if (v === 'wave') { kid(field, 'shy', '……媽！（但還是很小很小地揮了一下手）'); await wait(1500); say(field, '同學：「你媽好可愛喔。」　他：「……還好啦。」（耳朵紅了）'); }
+      else if (v === 'msg') { S('chime'); say(field, '你：「我在轉角。」　他：「好」（附一個小熊貼圖）'); await wait(1600); kid(field, 'smile', '……（走到轉角，接過你手上的水）謝啦。'); }
+      else { kid(field, 'smile', '（他跟同學說掰掰，小跑步到轉角）媽，謝謝你沒有在門口等。'); await wait(1500); say(field, '……走了幾步，他說：「今天其實有點想你。」'); hearts(field, 6); }
+      mian = 4;
+      memo('cool-corner', '🚶', '從校門口，變成在轉角等他');
+    } else if (kind === 'crush') {
+      enter('think', '');
+      await wait(900);
+      say(field, '……媽，怎樣才知道一個人喜歡你？');
+      const v = await choose(foot, [{ icon: '💬', label: '你覺得呢？', v: 'ask' }, { icon: '📖', label: '說我跟你爸的故事', v: 'story' }, { icon: '🤫', label: '我會幫你保密', v: 'secret' }]);
+      if (v === 'ask') { kid(field, 'shy', '……我覺得，是她借你橡皮擦的時候，會選你。'); await wait(1600); say(field, '（你忍住沒有笑。這是很認真的研究。）'); }
+      else if (v === 'story') { kid(field, 'surprised', `……爸爸以前每天繞路，只為了跟你搭同一班公車？`); await wait(1600); kid(field, 'happy', '……爸爸好遜。（但他笑得很開心）'); }
+      else { kid(field, 'shy', '……好。那我跟你說，她叫……算了，下次再說。'); await wait(1500); say(field, '（三天後，他自己跑來告訴你了）'); }
+      hearts(field, 6); mian = 5;
+      memo('first-crush', '💌', '他第一次問你，關於喜歡一個人');
+    } else if (kind === 'exam') {
+      enter('sad', '……');
+      await wait(900);
+      say(field, pick(['這次數學……考不好。', '英文小考，不及格。', '理化好難……我都聽不懂。']));
+      const v = await choose(foot, [{ icon: '🤗', label: '有盡力就好', v: 'hug' }, { icon: '📊', label: '一起看哪裡錯', v: 'review' }, { icon: '🧋', label: '先去喝珍奶', v: 'tea' }]);
+      if (v === 'hug') kid(field, 'smile', '……嗯。我下次再試一次。');
+      else if (v === 'review') { kid(field, 'think', '……原來是這裡看錯了。'); await wait(1400); kid(field, 'smile', '媽，你講解得比老師清楚。'); }
+      else { kid(field, 'happy', '……半糖少冰。（心情好了一半）'); await wait(1400); say(field, '喝完他說：「我明天會早點起來複習。」'); }
+      hearts(field, 4); mian = 4;
+    } else {
+      enter('sleepy', '……');
+      await wait(900);
+      say(field, '……好累。今天有八堂課加一個小考。');
+      const v = await choose(foot, [{ icon: '🎒', label: '我幫你背書包', v: 'bag' }, { icon: '🍙', label: '先吃點東西', v: 'eat' }, { icon: '🎧', label: '安靜陪他走', v: 'quiet' }]);
+      if (v === 'bag') { kid(field, 'shy', '不用啦……'); await wait(1200); kid(field, 'smile', '……好啦，背一下下就好。（書包比你想的重好多）'); }
+      else if (v === 'eat') kid(field, 'happy', '（三口吃掉一個飯糰）……活過來了。');
+      else { kid(field, 'smile', '（一路上都沒說話。快到家時，他把一邊耳機遞給你）'); hearts(field, 5); }
+      mian = 4;
     }
     await wait(1500);
     // 便當盒回來了（前一天晚上準備的）
@@ -466,27 +505,16 @@ window.MD = window.MD || {};
       field.appendChild(box);
       let line;
       if (b.by === 'dad') line = MD.DAD_BENTO[b.variant] ? MD.DAD_BENTO[b.variant].school : '爸爸做的便當，吃光光了！';
-      else if (b.score === 'perfect') line = `同學都說我的${theme.name}便當好可愛！`;
+      else if (b.score === 'perfect') line = st === 'jh' ? `……同學說我的便當很可愛。我說是我媽做的。` : `同學都說我的${theme.name}便當好可愛！`;
       else if (b.score === 'creative') line = pick(['同學問我那是什麼動物。我說是新品種。', '有人說我的便當是外星人。我說謝謝。']);
       else line = MD.DISHES[b.dish].like === 'veg' ? '……青菜還在裡面。' : '便當吃光光了！';
       kid(field, 'happy', line);
       mian += b.score === 'perfect' ? 2 : 1;
       await wait(1800);
     }
-    // 學校的小新聞（輪流，不會一直重複）
-    const news = pick([
-      { icon: '⭐', line: '老師給我一張貼紙！因為我坐得很好。（坐了 5 分鐘）' },
-      { icon: '💯', line: '聽寫 100 分！「網」這個字我寫最大。' },
-      { icon: '🤝', line: '今天有人跟我交換橡皮擦。他可能是我的朋友。' },
-      { icon: '🦕', line: '我在下課的時候，跟大家講了 20 分鐘的暴龍。' },
-      { icon: '🩹', line: '我跌倒了，可是我沒有哭。（只有哭一點點）' },
-      { icon: '📝', line: '老師說，明天要帶一個「會發光的東西」。' },
-      { icon: '🎵', line: '音樂課我負責敲三角鐵。叮。' },
-      { icon: '🍚', line: '營養午餐有花椰菜。我把它們排成一棵樹。' },
-      { icon: '🏃', line: '體育課跑步，我第四名！有八個人！' },
-      { icon: '🐟', line: '教室的魚今天換水了，牠好像很開心。' },
-    ]);
-    if (kind !== 'quiet' && Math.random() < .7) {
+    // 學校的小新聞（依階段，輪流不重複）
+    if (!['quiet', 'crush', 'exam'].includes(kind) && Math.random() < .7) {
+      const news = pick(MD.SCHOOL_NEWS[st]);
       const n = document.createElement('div'); n.className = 'news-item'; n.textContent = news.icon; field.appendChild(n);
       kid(field, 'sparkle', news.line);
       await wait(1900);
@@ -750,8 +778,12 @@ window.MD = window.MD || {};
   }
 
   /* ── 吃飯 ── */
+  MD.TRIP_FOOD = {
+    ramen: { name: '豚骨拉麵', unit: '碗', icon: '🍜', nut: 'cp', like: 'love' },
+    croissant: { name: '巴黎可頌', unit: '個', icon: '🥐', nut: 'c', like: 'love' },
+  };
   async function eat(field, foot, dishId, opts = {}) {
-    const d = MD.DISHES[dishId];
+    const d = MD.DISHES[dishId] || MD.TRIP_FOOD[dishId];
     const plate = document.createElement('div');
     plate.className = 'plate';
     plate.innerHTML = `<span class="bite-wrap"><span class="dish">${d.icon}</span></span>`;
@@ -777,7 +809,7 @@ window.MD = window.MD || {};
     let mian = 2;
     const fav = dishId === MD.state.profile.kid.favoriteDish;
     if (d.like === 'veg') {
-      kid(field, 'sad', pick(MD.LINES.eatVeg));
+      kid(field, 'sad', MD.line('eatVeg'));
       const v = await choose(foot, [{ icon: '🎭', label: '偽裝一下', v: 'mix' }, { icon: '🥄', label: '吃一口就好', v: 'one' }]);
       if (v === 'mix') {
         plate.classList.add('mixing');
@@ -786,7 +818,7 @@ window.MD = window.MD || {};
         plate.classList.remove('mixing');
         kid(field, 'think', '');
         await wait(500);
-        kid(field, 'smile', pick(MD.LINES.disguised));
+        kid(field, 'smile', MD.line('disguised'));
         if (opts.onDisguise) opts.onDisguise();
         mian = 3;
       } else {
@@ -821,7 +853,7 @@ window.MD = window.MD || {};
       mian += 1;
     }
     foot.innerHTML = '';
-    kid(field, 'happy', pick(d.like === 'love' ? MD.LINES.eatLove : MD.LINES.eatOk));
+    kid(field, 'happy', MD.line(d.like === 'love' ? 'eatLove' : 'eatOk'));
     await wait(900);
     return mian;
   }
@@ -1223,12 +1255,593 @@ window.MD = window.MD || {};
 
   // 選一件今晚的事（不會連續兩天一樣）
   async function family() {
-    const pool = { whack: dad, dadCook, photo, horse, flowers, laundry };
+    const pool = { whack: dad, dadCook, photo, horse, flowers, laundry, oldPhotos };
+    if (MD.stageAtLeast('high')) pool.kidCooks = kidCooks;
+    if (MD.stage() === 'jh') delete pool.horse;   // 國中生太大了，爸爸背不動
     const last = MD.state.flags.lastFamily;
     const id = pick(Object.keys(pool).filter(k => k !== last));
     MD.state.flags.lastFamily = id;
     return pool[id]();
   }
 
-  MD.ACTS = { serve, pickup, rally, match, leaves, slide, bubbles, school, homework, shoes, market, cafe, breakfast, snack, cook, lunch, bento, bentoNight, dad, family };
+  /* ══════════ 新地點的互動 ══════════ */
+
+  /* 游泳池：左右手輪流划，游兩趟 */
+  async function swim() {
+    const { field, foot } = open('pool', '游泳課', '左手、右手輪流按，幫他往前游');
+    const lane = document.createElement('div'); lane.className = 'lane';
+    lane.innerHTML = '<div class="lane-rope"></div><div class="swimmer">🏊</div><div class="lane-end">🏁</div>';
+    field.appendChild(lane);
+    const sw = lane.querySelector('.swimmer');
+    say(field, MD.stage() === 'low' ? '我會閉氣了！五秒！' : pick(['今天要游兩趟！', '教練說我的蛙腳很漂亮。', '我要比上次快！']));
+    let pos = 0, dir = 1, lap = 0, lastSide = null, splash = 0;
+    const t0 = performance.now();
+    await new Promise(resolve => {
+      foot.innerHTML = '';
+      ['左手', '右手'].forEach((label, i) => {
+        const b = document.createElement('button'); b.className = 'big-choice swim-btn'; b.innerHTML = `<span>${i ? '🫱' : '🫲'}</span><small>${label}</small>`;
+        b.onclick = () => {
+          if (lastSide === i) { splash++; S('miss'); pow(field, sw.offsetLeft + 20, sw.offsetTop, pick(['嗆到水了！', '咕嚕咕嚕', '換另一隻手！'])); lastSide = null; return; }
+          lastSide = i; S('bubble');
+          pos += 9 * dir;
+          if (pos >= 88) { pos = 88; dir = -1; lap++; sw.classList.add('turn'); say(field, '轉身！'); }
+          if (pos <= 0 && dir === -1) { pos = 0; lap++; }
+          sw.style.left = pos + '%';
+          if (lap >= 2) resolve();
+        };
+        foot.appendChild(b);
+      });
+    });
+    foot.innerHTML = '';
+    sw.classList.remove('turn');
+    const secs = since(t0);
+    say(field, secs < 9 ? '我是海豚！！' : pick(['我游完兩趟了！', '我的手好累，可是好開心。']));
+    hearts(field, 5);
+    await wait(1300);
+    const st = starsBy(secs + splash * 1.5, 9, 14, true);
+    await done(field, '游完兩趟了 🏊', 2 + st, `花了 ${Math.round(secs)} 秒`, st);
+    return { mian: 2 + st };
+  }
+
+  /* 圖書館：照他的描述找出那本書 */
+  const BOOK_COLORS = [['紅', '#ff8a8a'], ['藍', '#7fb8ff'], ['綠', '#6fd39a'], ['黃', '#ffd36e'], ['紫', '#b58cff'], ['粉紅', '#ff9ac6']];
+  const BOOK_ICONS = [['恐龍', '🦖'], ['星星', '⭐'], ['網球', '🎾'], ['貓', '🐱'], ['火箭', '🚀'], ['魚', '🐟']];
+  const FUNNY_TITLES = ['《如何讓爸爸不打呼》', '《一百種襪子的配對法》', '《章魚的三顆心臟》', '《為什麼天空是藍的》', '《世界上最無聊的書》', '《媽媽也需要休息》'];
+  async function books() {
+    const { field, foot, head } = open('library', '圖書館', '照他說的，找出那本書');
+    let wrong = 0;
+    for (let round = 0; round < 3; round++) {
+      const shelf = [];
+      for (let i = 0; i < 12; i++) shelf.push({ c: BOOK_COLORS[Math.floor(Math.random() * 6)], ic: BOOK_ICONS[Math.floor(Math.random() * 6)] });
+      const target = shelf[Math.floor(Math.random() * 12)];
+      // 讓答案只有一本
+      shelf.forEach(b => { if (b !== target && b.c === target.c && b.ic === target.ic) b.ic = BOOK_ICONS[(BOOK_ICONS.indexOf(b.ic) + 1) % 6]; });
+      kid(field, 'think', `我要找……${target.c[0]}色的，上面有${target.ic[0]}的書。`);
+      setHead(head, `第 ${round + 1} 本`, '');
+      const sh = document.createElement('div'); sh.className = 'shelf';
+      field.appendChild(sh);
+      await new Promise(res => {
+        shelf.forEach(b => {
+          const el = document.createElement('button'); el.className = 'book';
+          el.style.background = b.c[1]; el.innerHTML = `<span>${b.ic[1]}</span>`;
+          el.onclick = () => {
+            if (b === target) { S('chime'); el.classList.add('picked'); kid(field, 'sparkle', pick(['就是這本！', '找到了！你好厲害！', '對！這本！'])); setTimeout(res, 900); }
+            else { wrong++; S('soft'); el.classList.add('nope'); say(field, `${pick(FUNNY_TITLES)}……不是這本啦。`); }
+          };
+          sh.appendChild(el);
+        });
+      });
+      sh.remove();
+    }
+    kid(field, 'happy', MD.stage() === 'jh' ? '借好了。……媽，你要不要也借一本？' : '三本都借到了！今天晚上要看完。');
+    await wait(1300);
+    const st = starsBy(wrong, 0, 3, true);
+    await done(field, '借了三本書 📚', 2 + st, '', st);
+    return { mian: 2 + st };
+  }
+
+  /* 畫畫教室：他畫線稿，你來上色 */
+  const PAINT = ['#ff8a8a', '#ffd36e', '#6fd39a', '#7fb8ff', '#b58cff', '#ff9ac6', '#8b5e3c'];
+  async function paint() {
+    const { field, foot, head } = open('art', '畫畫教室', '先選顏色，再點畫裡的區塊');
+    kid(field, 'sparkle', pick(['我畫好線了！你幫我塗顏色！', '今天畫我們家！你來上色！']));
+    const pic = document.createElement('div'); pic.className = 'paint-pic';
+    pic.innerHTML = `<svg viewBox="0 0 200 150">
+      <rect data-r="sky" x="0" y="0" width="200" height="100" fill="#fff" stroke="#5a4440" stroke-width="2"/>
+      <circle data-r="sun" cx="165" cy="28" r="16" fill="#fff" stroke="#5a4440" stroke-width="2"/>
+      <rect data-r="ground" x="0" y="100" width="200" height="50" fill="#fff" stroke="#5a4440" stroke-width="2"/>
+      <rect data-r="wall" x="40" y="62" width="70" height="52" fill="#fff" stroke="#5a4440" stroke-width="2"/>
+      <path data-r="roof" d="M32 64 L75 30 L118 64 Z" fill="#fff" stroke="#5a4440" stroke-width="2"/>
+      <rect data-r="door" x="66" y="86" width="18" height="28" fill="#fff" stroke="#5a4440" stroke-width="2"/>
+      <circle data-r="tree" cx="150" cy="78" r="20" fill="#fff" stroke="#5a4440" stroke-width="2"/>
+      <rect x="146" y="96" width="8" height="18" fill="#8b5e3c"/></svg>`;
+    field.appendChild(pic);
+    let color = null;
+    const pal = document.createElement('div'); pal.className = 'palette';
+    PAINT.forEach(c => { const b = document.createElement('button'); b.style.background = c; b.onclick = () => { color = c; pal.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); }; pal.appendChild(b); });
+    field.appendChild(pal);
+    const filled = {};
+    pic.querySelectorAll('[data-r]').forEach(el => {
+      el.style.cursor = 'pointer';
+      el.addEventListener('click', () => {
+        if (!color) { MD.ui.toast('先選一個顏色'); return; }
+        el.setAttribute('fill', color); filled[el.dataset.r] = color; S('pop');
+        if (el.dataset.r === 'sun' && color === '#b58cff') say(field, '紫色的太陽！好有創意！');
+        if (el.dataset.r === 'sky' && color === '#ff9ac6') say(field, '粉紅色的天空，是傍晚的時候！');
+      });
+    });
+    await button(foot, '畫好了');
+    pal.remove();
+    const n = Object.keys(filled).length;
+    kid(field, 'happy', n >= 6 ? '這是我們家最漂亮的一張畫。要貼在冰箱最上面。' : '空白的地方是雪。對，是下雪了。');
+    hearts(field, 5);
+    await wait(1600);
+    const st = n >= 7 ? 3 : n >= 4 ? 2 : 1;
+    await done(field, '一起完成一幅畫 🎨', 2 + st, '', st);
+    return { mian: 2 + st, drawing: 'home' };
+  }
+
+  /* 書店：幫他挑一本書，也看到一本自己的書 */
+  const OBSESSION = { low: '恐龍', mid: '宇宙', high: '偵探', jh: '網球' };
+  const SHOP_BOOKS = [
+    { t: '《恐龍大百科》', tag: '恐龍', icon: '🦖' }, { t: '《宇宙的盡頭有什麼》', tag: '宇宙', icon: '🪐' },
+    { t: '《少年偵探團》', tag: '偵探', icon: '🔍' }, { t: '《網球名將傳記》', tag: '網球', icon: '🎾' },
+    { t: '《小王子》', tag: '經典', icon: '🌹' }, { t: '《章魚的秘密生活》', tag: '動物', icon: '🐙' },
+  ];
+  async function bookshop() {
+    const { field, foot } = open('bookstore', '逛書店', '幫他挑一本');
+    const want = OBSESSION[MD.stage()];
+    const opts = SHOP_BOOKS.slice().sort(() => Math.random() - .5).slice(0, 3);
+    if (!opts.some(b => b.tag === want)) opts[0] = SHOP_BOOKS.find(b => b.tag === want);
+    kid(field, 'think', '媽，你覺得我會喜歡哪一本？');
+    const v = await choose(foot, opts.map((b, i) => ({ icon: b.icon, label: b.t, v: i })), 'xl');
+    const b = opts[v];
+    if (b.tag === want) { kid(field, 'sparkle', `${b.t}！你怎麼知道我最近在看${want}的東西！`); hearts(field, 6); }
+    else kid(field, 'smile', `${b.t}……我沒看過這種的。好，我試試看。`);
+    await wait(1600);
+    say(field, '（結帳的時候，你在架上看到一本法文小說的中文版……就是那本，你二十五歲時沒翻譯完的那本。）');
+    const v2 = await choose(foot, [{ icon: '📕', label: '買給自己', v: 'buy' }, { icon: '🙂', label: '下次吧', v: 'later' }]);
+    if (v2 === 'buy') { MD.state.flags.frenchBook = (MD.state.flags.frenchBook || 0) + 1; kid(field, 'happy', '媽，你也買書了！我們回家一起看。'); }
+    else kid(field, 'think', '……媽，你剛剛看那本書看很久耶。');
+    await wait(1500);
+    await done(field, '各自帶了一本書回家 📖', 4);
+    return { mian: 4 };
+  }
+
+  /* 阿嬤家：跟阿嬤包水餃 */
+  async function dumpling() {
+    const { field, foot, head } = open('grandma', '跟阿嬤包水餃', '點麵皮放餡，再沿著邊捏 4 下');
+    say(field, pick(['阿嬤：「來來來，阿嬤教你們，這個要捏漂亮才會發財喔！」', '阿嬤：「乖孫！阿嬤準備好餡了，今天包一百顆！」']));
+    const tray = document.createElement('div'); tray.className = 'dumpling-tray'; field.appendChild(tray);
+    let made = 0; const NEED = 4;
+    while (made < NEED) {
+      const d = document.createElement('button'); d.className = 'dough'; d.innerHTML = '<span class="filling"></span>';
+      field.appendChild(d);
+      let stage = 0;
+      await new Promise(res => {
+        d.onclick = () => {
+          stage++; S('pop');
+          if (stage === 1) { d.classList.add('filled'); setHead(head, `第 ${made + 1} 顆`, '沿著邊捏 4 下'); }
+          else { d.style.setProperty('--pinch', stage - 1); }
+          if (stage >= 5) { d.classList.add('done'); res(); }
+        };
+      });
+      made++;
+      await wait(300);
+      d.remove();
+      const m = document.createElement('span'); m.textContent = made === 3 ? '🦖' : '🥟'; tray.appendChild(m);
+      if (made === 2) kid(field, 'sparkle', MD.stage() === 'jh' ? '阿嬤，我的有沒有比上次漂亮？' : '阿嬤你看！我的是恐龍形狀！');
+    }
+    say(field, pick(['阿嬤：「哇，包得比阿嬤還漂亮！」', '阿嬤：「你媽媽小時候也包得歪歪的，現在多會煮！」', '阿嬤：「下次再來，阿嬤再教你們包湯圓。」']));
+    hearts(field, 6);
+    await wait(1900);
+    const first = !MD.state.flags.grandma; MD.state.flags.grandma = true;
+    await done(field, '跟阿嬤包了一盤水餃 🥟', 4, '阿嬤塞了兩大包讓你們帶回家');
+    if (!MD.state.dishes.includes('dumplings')) MD.state.dishes.push('dumplings');
+    return { mian: 4, memory: first ? { id: 'grandma-dumpling', icon: '🥟', title: '阿嬤家的水餃' } : null };
+  }
+
+  /* 海邊：浪退的時候撿貝殼 */
+  async function shells() {
+    const { field, foot } = open('beach', '去海邊', '浪退下去的時候，趕快撿貝殼');
+    kid(field, 'sparkle', pick(['海！！', '我要撿最漂亮的貝殼！', '浪來了要跑喔！']));
+    const wave = document.createElement('div'); wave.className = 'wave'; field.appendChild(wave);
+    let got = 0, rare = false; const NEED = 8;
+    foot.innerHTML = '<span class="counter">🐚 0</span>';
+    const cnt = foot.querySelector('.counter');
+    await new Promise(resolve => {
+      let cycle = 0;
+      const tide = () => {
+        if (got >= NEED) return resolve();
+        cycle++;
+        wave.classList.remove('in'); void wave.offsetWidth;
+        // 浪退：貝殼出現
+        for (let i = 0; i < 4; i++) {
+          const s = document.createElement('button'); s.className = 'shell';
+          const isRare = !rare && cycle === 3 && i === 0;
+          s.textContent = isRare ? '🌟' : pick(['🐚', '🐚', '🦀', '🪸', '🐚']);
+          s.style.left = rand(8, 86) + '%'; s.style.top = rand(30, 70) + '%';
+          s.onclick = () => { s.remove(); S('pop'); got++; cnt.textContent = `🐚 ${got}`; if (isRare) { rare = true; kid(field, 'sparkle', '星星形狀的貝殼！！這是我這輩子最好的貝殼！'); } if (got >= NEED) resolve(); };
+          field.appendChild(s);
+        }
+        setTimeout(() => { wave.classList.add('in'); S('miss'); field.querySelectorAll('.shell').forEach(s => s.remove()); }, 2400);
+        setTimeout(tide, 3300);
+      };
+      tide();
+    });
+    field.querySelectorAll('.shell').forEach(s => s.remove());
+    kid(field, 'happy', pick(['媽，你聽，貝殼裡面有海的聲音。', '我要把這些排在窗台上，按照大小。']));
+    hearts(field, 6);
+    await wait(1600);
+    const first = !MD.state.flags.beach; MD.state.flags.beach = true;
+    await done(field, `撿了 ${got} 個貝殼 🐚`, rare ? 5 : 4);
+    return { mian: rare ? 5 : 4, memory: first ? { id: 'beach', icon: '🐚', title: '第一次一起去海邊' } : null, drawing: 'park' };
+  }
+
+  /* 補習班：陪他背單字（翻牌配對） */
+  const WORDS = [['apple', '蘋果'], ['tennis', '網球'], ['mother', '媽媽'], ['dream', '夢想'], ['graduate', '畢業'], ['ocean', '海洋'], ['family', '家人'], ['brave', '勇敢']];
+  async function flashcards() {
+    const { field, foot } = open('cram', '陪他背單字', '翻兩張卡，找出英文和中文的配對');
+    kid(field, 'sleepy', pick(['媽，你考我。', '明天要考單字……救我。', '這些字我都看過，可是記不起來。']));
+    const pairs = WORDS.slice().sort(() => Math.random() - .5).slice(0, 4);
+    const cards = pairs.flatMap((p, i) => [{ i, t: p[0] }, { i, t: p[1] }]).sort(() => Math.random() - .5);
+    const grid = document.createElement('div'); grid.className = 'cards-grid'; field.appendChild(grid);
+    let open1 = null, tries = 0, matched = 0, lock = false;
+    await new Promise(resolve => {
+      cards.forEach(c => {
+        const el = document.createElement('button'); el.className = 'flash'; el.innerHTML = `<span>${c.t}</span>`;
+        el.onclick = () => {
+          if (lock || el.classList.contains('up')) return;
+          el.classList.add('up'); S('paper');
+          if (!open1) { open1 = { c, el }; return; }
+          tries++;
+          if (open1.c.i === c.i) { S('chime'); el.classList.add('ok'); open1.el.classList.add('ok'); open1 = null; matched++; if (matched === 4) setTimeout(resolve, 500); }
+          else { lock = true; const o = open1; open1 = null; setTimeout(() => { el.classList.remove('up'); o.el.classList.remove('up'); lock = false; }, 700); }
+        };
+        grid.appendChild(el);
+      });
+    });
+    grid.remove();
+    kid(field, 'happy', tries <= 6 ? '媽，你記憶力比我好欸。……我是說，我也記住了。' : '好，我記住了。graduate 是畢業。三年後我就要 graduate 了。');
+    await wait(1600);
+    const st = starsBy(tries, 5, 8, true);
+    await done(field, '單字背好了 ✏️', 2 + st, `翻了 ${tries} 次`, st);
+    return { mian: 2 + st };
+  }
+
+  /* 診所：打預防針，按住他的手 */
+  async function shot() {
+    const { field, foot } = open('clinic', '打預防針', '按住「握住他的手」，讓他安心');
+    kid(field, 'sad', MD.stage() === 'jh' ? '……我不怕打針。（手在抖）' : pick(['……我不想打針。', '會痛嗎？會痛幾秒？', '我可以閉眼睛嗎？']));
+    const meter = document.createElement('div'); meter.className = 'meter calm'; meter.innerHTML = '<i></i>';
+    foot.appendChild(meter);
+    const btn = document.createElement('button'); btn.className = 'push-btn hold'; btn.textContent = '🤝 握住他的手';
+    foot.appendChild(btn);
+    let v = 0, holding = false, h;
+    await new Promise(resolve => {
+      const tick = () => {
+        v = Math.max(0, Math.min(100, v + (holding ? 2.2 : -1.5)));
+        meter.firstChild.style.width = v + '%';
+        if (v > 40 && v < 45) say(field, pick(['……你的手好溫暖。', '我數到三。一……二……']));
+        if (v >= 100) { clearInterval(h); resolve(); }
+      };
+      h = setInterval(tick, 50);
+      btn.onpointerdown = e => { e.preventDefault(); holding = true; btn.classList.add('ready'); };
+      btn.onpointerup = btn.onpointerleave = () => { holding = false; btn.classList.remove('ready'); };
+      btn.onclick = () => { v = Math.min(100, v + 6); if (v >= 100) { clearInterval(h); resolve(); } };   // 不方便長按的人，一直點也可以
+    });
+    foot.innerHTML = '';
+    S('pop');
+    kid(field, 'cry', '（咻——）');
+    await wait(900);
+    kid(field, 'smile', MD.stage() === 'jh' ? '……就這樣？還好嘛。' : '一點都不痛！（眼淚還在眼眶裡）');
+    const it = document.createElement('div'); it.className = 'show-item'; it.textContent = '🦖'; field.appendChild(it);
+    say(field, '護理師給了一張恐龍貼紙。');
+    await wait(1600);
+    await done(field, '勇敢的一天 💉', 4);
+    return { mian: 4 };
+  }
+
+  /* 夜市：套圈圈（擺動到瓶子上方時丟） */
+  async function ringtoss() {
+    const { field, foot } = open('nightmarket', '逛夜市・套圈圈', '圈圈移到瓶子正上方時，按「丟！」');
+    kid(field, 'sparkle', pick(['我要那隻大熊！', '五個圈圈，我要全部套中！', '媽，你丟，我幫你看準。']));
+    const row = document.createElement('div'); row.className = 'bottles';
+    row.innerHTML = [0, 1, 2, 3, 4].map(() => '<span>🍾</span>').join('');
+    field.appendChild(row);
+    const ring = document.createElement('div'); ring.className = 'ring-aim'; ring.textContent = '⭕'; field.appendChild(ring);
+    const btn = document.createElement('button'); btn.className = 'push-btn'; btn.textContent = '丟！'; foot.appendChild(btn);
+    let hits = 0;
+    for (let n = 0; n < 5; n++) {
+      const res = await new Promise(resolve => {
+        const t0 = performance.now(); let raf;
+        const loop = now => { const x = 50 + 40 * Math.sin((now - t0) / 520); ring.style.left = x + '%'; ring.dataset.x = x; btn.classList.toggle('ready', [14, 32, 50, 68, 86].some(c => Math.abs(c - x) < 4.5)); raf = requestAnimationFrame(loop); };
+        raf = requestAnimationFrame(loop);
+        btn.onclick = () => { cancelAnimationFrame(raf); const x = +ring.dataset.x; const centers = [14, 32, 50, 68, 86]; resolve(centers.some(c => Math.abs(c - x) < 4.5)); };
+      });
+      btn.classList.remove('ready');
+      ring.classList.add('throw'); S(res ? 'chime' : 'miss');
+      await wait(450);
+      ring.classList.remove('throw');
+      if (res) { hits++; pow(field, field.clientWidth * (+ring.dataset.x) / 100, field.clientHeight * .4, '套中了！'); }
+      else say(field, pick(['差一點點！', '圈圈彈出去了！', '下一個一定中！']));
+      await wait(500);
+    }
+    btn.remove();
+    const prize = hits >= 4 ? '🧸 大熊' : hits >= 2 ? '🐥 小雞鑰匙圈' : '🍬 安慰糖果';
+    kid(field, 'happy', hits >= 4 ? '大熊！！媽你好厲害！我要叫牠「套中」。' : `我們拿到${prize}了！`);
+    hearts(field, 5);
+    await wait(1500);
+    const st = hits >= 4 ? 3 : hits >= 2 ? 2 : 1;
+    await done(field, `套中 ${hits} 個，拿到${prize}`, 2 + st, '回家路上還買了一包地瓜球', st);
+    return { mian: 2 + st };
+  }
+
+  /* ══════════ 新的全家時光 ══════════ */
+
+  // 他第一次做菜給全家吃（高年級以後）
+  async function kidCooks() {
+    const { field, foot } = open('tvroom', '今天他做晚餐', '');
+    trio(field, { dad: 'surprised', kid: 'sparkle', mom: 'surprised' });
+    say(field, MD.stage() === 'jh' ? '{kid}：「媽，今天你去坐著，我來煮。」' : '{kid}：「今天我是主廚！你們去坐好！」');
+    await wait(1600);
+    const dish = pick(['🍳 番茄炒蛋（有點太鹹）', '🍜 泡麵加蛋加青菜（他說是改良版）', '🍛 咖哩（馬鈴薯切得超大塊）']);
+    const it = document.createElement('div'); it.className = 'show-item'; it.textContent = dish.split(' ')[0]; field.appendChild(it);
+    say(field, `端上桌的是：${dish}`);
+    const v = await choose(foot, [{ icon: '😋', label: '好好吃！', v: 'yum' }, { icon: '🥹', label: '（眼眶有點熱）', v: 'teary' }]);
+    if (v === 'yum') { trio(field, { dad: 'happy', kid: 'shy', mom: 'happy' }); say(field, '{kid}：「真的嗎？……那我下次再煮。」'); }
+    else { trio(field, { dad: 'smile', kid: 'think', mom: 'cry' }); say(field, '{kid}：「媽你怎麼了？太鹹了嗎？」　{dad}：「她是太開心了。」'); }
+    hearts(field, 8);
+    await wait(2000);
+    const first = !MD.state.flags.kidCooks; MD.state.flags.kidCooks = true;
+    await done(field, '他煮的第一頓晚餐 🍳', 4);
+    return { mian: 4, memory: first ? { id: 'kid-cooks', icon: '🍳', title: '他煮給全家吃的第一頓晚餐' } : null };
+  }
+
+  // 全家一起翻舊照片
+  async function oldPhotos() {
+    const { field, foot } = open('tvroom', '翻舊相簿', '點照片，聊聊那時候');
+    trio(field, { dad: 'smile', kid: 'happy', mom: 'smile' }).classList.add('low');
+    const mems = (MD.state.memories || []).slice(-6);
+    const list = mems.length ? mems : [{ icon: '👶', title: '剛出生的時候' }, { icon: '🎂', title: '第一個生日' }];
+    const wrap = document.createElement('div'); wrap.className = 'old-photos'; field.appendChild(wrap);
+    let seen = 0;
+    await new Promise(res => {
+      list.slice(0, 4).forEach((m, i) => {
+        const p = document.createElement('button'); p.className = 'old-photo'; p.style.setProperty('--r', (i % 2 ? 4 : -4) + 'deg');
+        p.innerHTML = `<span>${m.icon}</span><small>${esc(m.title)}</small>`;
+        p.onclick = () => { if (p.classList.contains('seen')) return; p.classList.add('seen'); S('paper'); seen++; say(field, pick(['{kid}：「我記得這個！」', '{dad}：「那時候你才這麼小。」', '{kid}：「我那時候好矮喔。」', '（大家都笑了）'])); if (seen >= Math.min(4, list.length)) setTimeout(res, 1200); };
+        wrap.appendChild(p);
+      });
+    });
+    hearts(field, 6);
+    await wait(800);
+    await done(field, '那些時候，都還記得 📷', 3);
+    return { mian: 3 };
+  }
+
+  /* ══════════ 最後的特別日子：會考、畢業、旅行、回顧 ══════════ */
+
+  // 點一下才繼續（給旁白、回憶用）
+  function tapNext(field, label = '點一下繼續') {
+    return new Promise(res => {
+      const hint = document.createElement('div'); hint.className = 'tap-hint'; hint.textContent = label;
+      field.appendChild(hint);
+      setTimeout(() => { field.onclick = () => { field.onclick = null; hint.remove(); res(); }; }, 350);
+    });
+  }
+  async function lines(field, list, who = 'kid', expr = 'smile') {
+    for (const l of list) {
+      if (who === 'kid') kid(field, expr, l); else say(field, l);
+      await tapNext(field);
+    }
+  }
+
+  /* 第 64 天：國中會考 */
+  async function examDay() {
+    const s = MD.state;
+    let mian = 0;
+    // 1. 早餐
+    let sc = open('kitchen', '會考的早上', '');
+    kid(sc.field, 'think', '……媽，早。我昨天有睡著，大概四個小時。');
+    await wait(1400);
+    say(sc.field, '今天的早餐要做什麼？');
+    const b = await choose(sc.foot, [{ icon: '🍙', label: '一樣的鮭魚飯糰', v: 'onigiri' }, { icon: '🥪', label: '總匯三明治', v: 'sandwich' }, { icon: '🌯', label: '蛋餅', v: 'danbing' }]);
+    if (b === 'onigiri') { kid(sc.field, 'smile', '……一樣的飯糰。跟一年級的時候一樣。'); await wait(1600); kid(sc.field, 'happy', '吃這個，我就不緊張了。'); }
+    else kid(sc.field, 'happy', '好。吃飽才有力氣寫考卷。');
+    await wait(1500);
+    // 2. 考場門口
+    sc = open('class', '考場門口', '');
+    kid(sc.field, 'normal', '媽，你送到這裡就好。');
+    await wait(1400);
+    say(sc.field, '最後，想跟他說什麼？');
+    const w = await choose(sc.foot, [{ icon: '💪', label: '盡力就好', v: 'try' }, { icon: '🤝', label: '握一下手', v: 'hand' }, { icon: '🎾', label: '一球一球來', v: 'tennis' }]);
+    if (w === 'try') kid(sc.field, 'smile', '嗯。我會的。');
+    else if (w === 'hand') { kid(sc.field, 'shy', '……（他握了一下，比你想的用力）'); hearts(sc.field, 4); }
+    else kid(sc.field, 'sparkle', '……對，就像打網球。手肘先往後。（他笑了）');
+    await wait(1600);
+    sc.field.querySelector('.mini-kid').classList.add('walk-away');
+    say(sc.field, '（他走進校門，回頭揮了一下手）');
+    await wait(2000);
+    // 3. 在外面等：回憶一張一張浮現
+    sc = open('cafe', '在考場外面等', '點一下浮起來的照片');
+    say(sc.field, '考試要考一整天。你坐在對面的咖啡店，看著校門。');
+    const mems = (s.memories || []).filter(m => m.icon).slice(0, 8);
+    const wrap = document.createElement('div'); wrap.className = 'float-mems'; sc.field.appendChild(wrap);
+    const show = mems.length ? mems.slice(0, 6) : [{ icon: '🎾', title: '撿球搭檔' }];
+    let seen = 0;
+    await new Promise(res => {
+      show.forEach((m, i) => {
+        const p = document.createElement('button'); p.className = 'float-mem'; p.style.left = (8 + (i % 3) * 30) + '%'; p.style.top = (14 + Math.floor(i / 3) * 30) + '%'; p.style.animationDelay = (i * .3) + 's';
+        p.innerHTML = `<span>${m.icon}</span><small>${esc(F(m.title))}</small>`;
+        p.onclick = () => { if (p.classList.contains('seen')) return; p.classList.add('seen'); S('paper'); seen++; if (seen >= show.length) setTimeout(res, 900); };
+        wrap.appendChild(p);
+      });
+    });
+    wrap.remove();
+    say(sc.field, '原來我等的不是考試結束，是這九年。');
+    await wait(2600);
+    // 4. 考完了
+    sc = open('class', '考完了', '');
+    const k = kid(sc.field, 'sleepy', '……考完了。'); k.classList.add('run-in');
+    await wait(1500);
+    const e = await choose(sc.foot, [{ icon: '🤗', label: '張開手', v: 'hug' }, { icon: '🧋', label: '去喝珍奶', v: 'tea' }]);
+    if (e === 'hug') { kid(sc.field, 'cry', '……（這次他沒有躲，抱得很久）'); await wait(1800); kid(sc.field, 'smile', '媽，謝謝你。不只是今天。'); hearts(sc.field, 10); }
+    else { kid(sc.field, 'happy', '全糖！今天可以全糖！'); await wait(1600); kid(sc.field, 'smile', '……媽，謝謝你今天在外面等那麼久。'); hearts(sc.field, 6); }
+    await wait(2000);
+    mian += 10;
+    await done(sc.field, '會考結束了', mian, '不管結果怎麼樣，這一天都會記得');
+    return { mian, memory: { id: 'exam-day', icon: '📝', title: '會考那天，你在外面等了一整天' } };
+  }
+
+  /* 第 65 天：畢業典禮，決定全家旅行 */
+  async function graduation() {
+    let sc = open('class', '國中畢業典禮', '一直點，為他鼓掌！');
+    say(sc.field, '台上念到他的名字了。');
+    const k = kid(sc.field, 'sparkle', ''); k.classList.add('on-stage');
+    sc.foot.innerHTML = '<div class="meter"><i></i></div>';
+    const meter = sc.foot.querySelector('i');
+    let n = 0;
+    await new Promise(res => {
+      sc.field.onpointerdown = ev => {
+        n++; S('pop');
+        const r = sc.field.getBoundingClientRect();
+        pow(sc.field, ev.clientX - r.left, ev.clientY - r.top, pick(['👏', '👏👏', '好棒！', '畢業快樂！']));
+        meter.style.width = Math.min(100, n / 16 * 100) + '%';
+        if (n === 8) say(sc.field, '（旁邊的爸爸哭得比誰都大聲）');
+        if (n >= 16) { sc.field.onpointerdown = null; res(); }
+      };
+    });
+    sc.foot.innerHTML = '';
+    hearts(sc.field, 10);
+    await wait(1500);
+    sc = open('tvroom', '典禮結束後', '');
+    trio(sc.field, { dad: 'cry', kid: 'smile', mom: 'smile' }).classList.add('low');
+    await lines(sc.field, [
+      '媽，我有一些話想說。',
+      '一年級的時候，你每天帶我出門。我的鞋子常常不見，你都陪我找。',
+      '你做的便當，同學都說好可愛。爸爸做的那個「加由」，我到現在還記得。',
+      '國中以後，我叫你不要在校門口等。可是我每次走到轉角，都會先看你在不在。',
+      '……謝謝你。你一直是我的撿球搭檔。',
+    ]);
+    trio(sc.field, { dad: 'cry', kid: 'shy', mom: 'cry' });
+    say(sc.field, '{dad}：「好了好了，我們來決定畢業旅行要去哪裡！」');
+    await wait(1600);
+    const dest = await choose(sc.foot, [{ icon: '🗾', label: '日本', v: 'japan' }, { icon: '🗼', label: '歐洲', v: 'europe' }]);
+    MD.state.flags.trip = dest;
+    say(sc.field, dest === 'japan' ? '{kid}：「日本！我想吃真正的拉麵，還要看富士山！」' : '{kid}：「歐洲！媽，我們去巴黎，還有……溫布頓！」');
+    await wait(2000);
+    await done(sc.field, '畢業了 🎓', 15, dest === 'japan' ? '下一站：日本' : '下一站：歐洲');
+    return { mian: 15, memory: { id: 'graduation', icon: '🎓', title: '畢業那天，他說你一直是他的撿球搭檔' } };
+  }
+
+  /* 第 66 天：全家旅行 */
+  async function trip() {
+    const dest = MD.state.flags.trip || 'japan';
+    let total = 0;
+    if (dest === 'japan') {
+      // 京都：穿浴衣散步，收集燈籠
+      let sc = open('japan', '京都・穿浴衣散步', '點亮路上的燈籠');
+      kid(sc.field, 'sparkle', '媽，你穿浴衣好好看。爸爸的有點緊。');
+      let lit = 0;
+      await new Promise(res => {
+        for (let i = 0; i < 6; i++) {
+          const l = document.createElement('button'); l.className = 'lantern'; l.textContent = '🏮';
+          l.style.left = (10 + i * 14) + '%'; l.style.top = (18 + (i % 2) * 14) + '%';
+          l.onclick = () => { if (l.classList.contains('lit')) return; l.classList.add('lit'); S('chime'); lit++; if (lit === 6) setTimeout(res, 600); };
+          sc.field.appendChild(l);
+        }
+      });
+      kid(sc.field, 'happy', '整條街都亮了。像我們家冰箱上的那些畫一樣。');
+      await wait(1800);
+      await done(sc.field, '京都的夜晚 🏮', 5); total += 5;
+      // 拉麵
+      sc = open('japan', '一碗真正的拉麵', '');
+      total += await eat(sc.field, sc.foot, 'ramen');
+      kid(sc.field, 'sparkle', '……好好吃。可是媽做的牛肉麵，第二好吃。');
+      await wait(1800);
+      await done(sc.field, '日本的拉麵 🍜', 3); total += 3;
+      // 富士山前的全家福
+      sc = open('fuji', '富士山前的全家福', '大家都笑的時候，按快門');
+      trio(sc.field, { dad: 'happy', kid: 'sparkle', mom: 'happy' }).classList.add('posing');
+      await button(sc.foot, '📸 喀嚓');
+      S('shutter'); sc.field.querySelector('.trio').classList.add('framed');
+      say(sc.field, '{kid}：「這張要貼在冰箱最中間。」');
+      await wait(2000);
+      await done(sc.field, '富士山前的我們 🗻', 5); total += 5;
+      return { mian: total, memory: { id: 'trip', icon: '🗻', title: '全家在富士山前的照片' }, drawing: 'family' };
+    }
+    // 歐洲
+    let sc = open('paris', '巴黎・塞納河畔的書攤', '');
+    say(sc.field, '河邊一整排綠色的舊書攤。你在其中一攤停下來。');
+    await wait(1600);
+    say(sc.field, '是那本法文小說。二十五歲時，你翻譯到第三章就停下來的那一本。');
+    await wait(2200);
+    kid(sc.field, 'smile', '媽，這本我買給你。我存了很久的零用錢。');
+    const v = await choose(sc.foot, [{ icon: '🥹', label: '收下', v: 'take' }, { icon: '📖', label: '請他唸第一句', v: 'read' }]);
+    if (v === 'read') { kid(sc.field, 'shy', '「La vie……」……後面我不會唸。媽，你唸給我聽。'); await wait(2000); say(sc.field, '你唸了。唸到一半，聲音有點抖。'); }
+    else { say(sc.field, '你把書抱在胸前。他假裝在看河，沒有看你。'); }
+    hearts(sc.field, 8);
+    await wait(2000);
+    await done(sc.field, '那本書，終於要讀完了 📕', 6); total += 6;
+    // 溫布頓
+    sc = open('court', '倫敦・溫布頓', '在旁邊的草地球場，跟他打一場');
+    kid(sc.field, 'sparkle', '溫布頓……我從一年級就想來這裡。');
+    await wait(1500);
+    const hit = await rallyCore(sc.field, sc.foot, 10, { start: '媽，跟我打一場！' });
+    kid(sc.field, 'happy', hit >= 7 ? '媽，你根本是職業選手！' : '在溫布頓跟媽媽打網球……我會記一輩子。');
+    await wait(1800);
+    await done(sc.field, '溫布頓的草地 🎾', 6); total += 6;
+    // 可頌
+    sc = open('paris', '巴黎的早晨', '');
+    total += await eat(sc.field, sc.foot, 'croissant');
+    kid(sc.field, 'smile', '回去以後，我們在家也做可頌好不好？');
+    await wait(1600);
+    await done(sc.field, '巴黎的可頌 🥐', 3); total += 3;
+    MD.state.flags.frenchBookDone = true;
+    return { mian: total, memory: { id: 'trip', icon: '🗼', title: '巴黎的書攤，和溫布頓的草地' }, drawing: 'family' };
+  }
+
+  /* 第 67 天：回家，一起回顧這些年 */
+  async function finale() {
+    const s = MD.state;
+    let sc = open('home', '回到家', '');
+    trio(sc.field, { dad: 'sleepy', kid: 'smile', mom: 'smile' }).classList.add('low');
+    say(sc.field, '{kid}：「……還是家裡最好。」');
+    await wait(2000);
+    say(sc.field, '晚上，三個人坐在客廳，把這些年的回憶一張一張拿出來看。');
+    await tapNext(sc.field);
+    // 回憶一張一張出現
+    sc = open('home', '這些年', '點一下看下一張');
+    const mems = (s.memories || []).filter(m => m.icon);
+    const pickMems = mems.length > 12 ? mems.filter((_, i) => i % Math.ceil(mems.length / 12) === 0) : mems;
+    const card = document.createElement('div'); card.className = 'review-card'; sc.field.appendChild(card);
+    for (const m of pickMems) {
+      card.innerHTML = `<span>${m.icon}</span><h4>${esc(F(m.title))}</h4><small>${m.day ? MD.GRADE_NAMES[MD.gradeOf(m.day)] : ''}</small>`;
+      card.classList.remove('in'); void card.offsetWidth; card.classList.add('in');
+      S('paper');
+      await tapNext(sc.field, '');
+    }
+    card.remove();
+    // 數字
+    sc = open('home', '這些年，我們一起', '');
+    const stats = document.createElement('div'); stats.className = 'review-stats';
+    stats.innerHTML = `
+      <div><b>${s.day}</b><small>天</small></div>
+      <div><b>${s.mian}</b><small>綿</small></div>
+      <div><b>${s.dishes.length}</b><small>道會做的菜</small></div>
+      <div><b>${s.fridge.length}</b><small>張冰箱上的畫</small></div>
+      <div><b>${s.memories.length}</b><small>個回憶</small></div>
+      <div><b>${s.dadHits}</b><small>次爸爸飛到天邊</small></div>`;
+    sc.field.appendChild(stats);
+    say(sc.field, '{dad}：「我被打飛了這麼多次喔？」');
+    await tapNext(sc.field);
+    stats.remove();
+    // 他寫的信
+    await MD.ui.popup(`<p class="q">${esc(F('給媽媽：\n\n小時候，我的鞋子常常不見。\n你每次都蹲下來，陪我一起找。\n\n你帶我去網球場、去公園、去阿嬤家。\n下雨天，你在客廳陪我打氣球網球。\n\n國中以後，我變得不太說話。\n可是我都知道，你在轉角等我。\n\n媽，謝謝你。\n你是全世界最好的撿球搭檔。\n以後換我陪你，去你想去的地方。\n\n——{kid}（15 歲）'))}</p><p class="tap" style="text-align:center">點一下，把信收好</p>`, { cls: 'letter' });
+    sc.field.querySelector('.mini-bubble')?.remove();
+    return { mian: 20, memory: { id: 'finale', icon: '💌', title: '十五歲的他寫給你的信' } };
+  }
+
+  MD.ACTS = { cancelAll: () => { GEN++; close(); }, closeScene: close, swim, books, paint, bookshop, dumpling, shells, flashcards, shot, ringtoss, examDay, graduation, trip, finale, serve, pickup, rally, match, leaves, slide, bubbles, school, homework, shoes, market, cafe, breakfast, snack, cook, lunch, bento, bentoNight, dad, family };
 })();

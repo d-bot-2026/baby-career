@@ -4,7 +4,7 @@
 window.MD = window.MD || {};
 
 MD.SAVE_KEY = 'baby-career-save';
-MD.SAVE_VERSION = 4;
+MD.SAVE_VERSION = 5;
 
 MD.newState = function () {
   return {
@@ -46,6 +46,11 @@ MD.MIGRATIONS = {
   3: s => {
     if (s.today && !s.today.nightDone && s.today.plan && s.today.plan.some(x => x.slot === 'bento')) s.today = null;
     if (s.today && typeof s.today.bento === 'string') s.today.bento = { dish: s.today.bento, by: 'mom' };
+    return s;
+  },
+  // v4 → v5：完整版（地圖改成 5 列、國中、新地點）。進行中的那一天重新排
+  4: s => {
+    if (s.today && !s.today.nightDone) s.today = null;
     return s;
   },
 };
