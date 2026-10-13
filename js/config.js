@@ -13,6 +13,7 @@ MD.POINT = '綿';   // 愛的點數名稱（只累積、不花用）
 MD.DEFAULT_PROFILE = {
   mom: {
     name: '媽媽',
+    ownName: 'Mumu',       // 她自己的名字。在咖啡店裡，她不是誰的媽媽，她是她自己（{me}）
     likes: ['咖啡', '網球', '法國文學'],
     drink: '拿鐵',
     friend: 'Sophie',
@@ -39,6 +40,7 @@ MD.fill = function (text, profile) {
     drink: p.mom.drink, friend: p.mom.friend,
     '他': p.kid.gender === 'girl' ? '她' : '他',
     pt: MD.POINT,
+    me: p.mom.ownName || '媽媽',
   };
   return text.replace(/\{([^}]+)\}/g, (m, k) => (k in map ? map[k] : m));
 };

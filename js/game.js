@@ -251,7 +251,7 @@ window.MD = window.MD || {};
           }
           const c = x.card && MD.CARDS[x.card];
           const tagTxt = x.card === 'school' ? '點我可以請假' : '固定';
-          return `<button class="slot act ${c ? 'set' : ''} ${x.fixed ? 'fixed' : ''}" data-i="${i}"><span class="slot-name">${sl.icon} ${sl.name}</span>${c ? `<span class="slot-val">${c.icon} ${c.name}${x.fixed ? `<em>${tagTxt}</em>` : ''}</span>` : `<span class="slot-empty">放一張卡片</span>`}</button>`;
+          return `<button class="slot act ${c ? 'set' : ''} ${x.fixed ? 'fixed' : ''}" data-i="${i}"><span class="slot-name">${sl.icon} ${sl.name}</span>${c ? `<span class="slot-val">${c.icon} ${F(c.name)}${x.fixed ? `<em>${tagTxt}</em>` : ''}</span>` : `<span class="slot-empty">放一張卡片</span>`}</button>`;
         }).join('')}
       </div>
       <div class="cards-title">推薦行程<small>點一下放進空格</small></div>
@@ -259,7 +259,7 @@ window.MD = window.MD || {};
         ${recs.slice(0, 4).map((id, i) => {
           const c = MD.CARDS[id], lv = cardLevel(id);
           const isWish = t.wish.type === 'card' && t.wish.id === id;
-          return `<button class="card ${i === 0 ? 'top' : ''}" data-card="${id}">${isWish ? '<span class="tag">心願</span>' : i === 0 ? '<span class="tag">推薦</span>' : ''}<span class="card-icon">${c.icon}</span><b>${c.name}</b><small>Lv${lv.index + 1} ${lv.task}</small></button>`;
+          return `<button class="card ${i === 0 ? 'top' : ''}" data-card="${id}">${isWish ? '<span class="tag">心願</span>' : i === 0 ? '<span class="tag">推薦</span>' : ''}<span class="card-icon">${c.icon}</span><b>${F(c.name)}</b><small>Lv${lv.index + 1} ${lv.task}</small></button>`;
         }).join('')}
       </div>
       <div class="plan-actions">
@@ -356,7 +356,7 @@ window.MD = window.MD || {};
         </button>`; }).join('')}
       <span class="tree" style="left:4%;top:37%">🌳</span><span class="tree" style="left:96%;top:75%">🌲</span>
       <span class="tree" style="left:34%;top:1%">🌸</span><span class="tree" style="left:66%;top:56%">🌷</span>
-      <div class="walkers" id="walkers"><div class="w-mom">${MD.art.char('mom', 'smile')}</div><div class="w-kid">${MD.art.char('kid', 'happy')}</div><div class="w-bubble" id="w-bubble"></div></div>
+      <div class="walkers" id="walkers" data-me="${esc(MD.state.profile.mom.ownName || '')}"><div class="w-mom">${MD.art.char('mom', 'smile')}</div><div class="w-kid">${MD.art.char('kid', 'happy')}</div><div class="w-bubble" id="w-bubble"></div></div>
       <div class="pin" id="pin">👇</div>`;
     placeWalkers(t.at, false);
     document.querySelectorAll('.place').forEach(b => (b.onclick = () => onPlace(b.dataset.id)));
@@ -391,7 +391,8 @@ window.MD = window.MD || {};
   function kidBubble(text) {
     const b = $('w-bubble'); if (!b) return;
     const k = MD.state.kid;
-    const line = text ?? (k.full <= 1 ? MD.line('hungry') : k.energy <= 1 ? MD.line('tired') : '');
+    if ($('walkers').classList.contains('solo') && !text) { b.style.display = 'none'; return; }   // 孩子不在旁邊
+    const line = text ??(k.full <= 1 ? MD.line('hungry') : k.energy <= 1 ? MD.line('tired') : '');
     b.textContent = F(line);
     b.style.display = line ? '' : 'none';
   }
@@ -520,9 +521,9 @@ window.MD = window.MD || {};
       if (fed) result.mian += 1;
       const nlv = cardLevel(x.card);
       if (nlv.index > lv.index) {
-        t.memories.push({ id: `${x.card}-lv${nlv.index + 1}`, icon: c.icon, title: `${c.name}升級：${nlv.task}` });
+        t.memories.push({ id: `${x.card}-lv${nlv.index + 1}`, icon: c.icon, title: `${MD.fill(c.name)}升級：${nlv.task}` });
         MD.audio && MD.audio.sfx('fanfare');
-        await MD.ui.popup(`<p class="label">熟悉度提升</p><div class="big-icon">${c.icon}</div><h3>${c.name} Lv${nlv.index + 1}</h3><p class="mem">下次的任務：${nlv.task}</p><p class="tap">點一下繼續</p>`);
+        await MD.ui.popup(`<p class="label">熟悉度提升</p><div class="big-icon">${c.icon}</div><h3>${F(c.name)} Lv${nlv.index + 1}</h3><p class="mem">下次的任務：${nlv.task}</p><p class="tap">點一下繼續</p>`);
       }
     }
     // Ethan 的心願達成
@@ -762,6 +763,7 @@ window.MD = window.MD || {};
           <tr><td>孩子</td><td>${esc(p.kid.name)}（${p.kid.age} 歲，${p.kid.gender === 'girl' ? '女孩' : '男孩'}，獨生子）</td></tr>
           <tr><td>孩子的特質</td><td>${p.kid.traits.map(t => traitNames[t] || t).join('、')}</td></tr>
           <tr><td>最愛的菜</td><td>${esc(MD.DISHES[p.kid.favoriteDish].name)}</td></tr>
+          <tr><td>她的名字</td><td>${esc(p.mom.ownName || '')}</td></tr>
           <tr><td>媽媽喜歡的</td><td>${p.mom.likes.map(esc).join('、')}</td></tr>
         </table>
       </div>

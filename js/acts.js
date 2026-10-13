@@ -657,9 +657,9 @@ window.MD = window.MD || {};
    */
   async function cafe() {
     const who = pick(['{dad}帶{kid}去騎腳踏車了。', '{kid}在阿嬤家玩積木。', '{dad}說：「今天下午交給我！」']);
-    const { field, foot, head } = open('cafe', '媽媽的獨處時間', F(who));
-    say(field, '今天，有四十分鐘是自己的。');
-    await wait(2000);
+    const { field, foot, head } = open('cafe', '{me} 的四十分鐘', F(who));
+    say(field, pick(['在這裡，她不是誰的媽媽。她是 {me}。', '推開咖啡店的門，她又變回了 {me}。', '接下來四十分鐘，她只是 {me}。']));
+    await wait(2400);
     say(field, '');
     const wrap = document.createElement('div');
     wrap.className = 'latte';
@@ -680,6 +680,12 @@ window.MD = window.MD || {};
     cv.onpointerdown = null;
     wrap.classList.add('sip');
     S('soft');
+    // 店員叫她的名字
+    say(field, '店員：「{me}，你的{drink}好了。」');
+    await wait(1800);
+    say(field, pick(['……好久沒有人這樣叫我了。', '（她愣了一下，然後笑了）', '……對，我是 {me}。']));
+    await wait(1800);
+    say(field, '');
     // 讀幾頁書：點一下翻一頁
     setHead(head, '讀幾頁書', '點書，翻到下一頁');
     const book = document.createElement('button'); book.className = 'cafe-book'; book.innerHTML = '<span class="pg">📖</span><small>那本翻到第三章就停下來的法文小說</small>';
@@ -707,17 +713,18 @@ window.MD = window.MD || {};
     S('chime');
     const msg = document.createElement('div'); msg.className = 'phone-msg';
     msg.innerHTML = F(pick([
-      '<b>{dad}</b>{kid}問你什麼時候回來。他說「我想媽媽了，可是你慢慢來」。',
-      '<b>{dad}</b>（照片）{kid}用積木蓋了一間咖啡店，說是要送給你的。',
-      '<b>{friend}</b>欸，下次我們一起去那家咖啡店吧！好久沒有好好聊天了。',
-      '<b>{dad}</b>晚餐我來煮。你多坐一下沒關係。',
+      '<b>{dad}</b>{me}，{kid}問你什麼時候回來。他說「我想媽媽了，可是你慢慢來」。',
+      '<b>{dad}</b>（照片）{kid}用積木蓋了一間咖啡店，說是要送給 {me} 的。',
+      '<b>{friend}</b>{me}！下次我們一起去那家咖啡店吧！好久沒有好好聊天了。',
+      '<b>{dad}</b>{me}，晚餐我來煮。你多坐一下沒關係。',
+      '<b>{friend}</b>{me}，我最近在想，你以前說想翻譯的那本書，還有在看嗎？',
     ]));
     field.appendChild(msg);
     await wait(3000);
     const first = !MD.state.flags.cafe;
     MD.state.flags.cafe = true;
-    await done(field, '媽媽的四十分鐘 ☕', 4, '充好電了，回家吧');
-    return { mian: 4, memory: first ? { id: 'cafe', icon: '☕', title: '屬於自己的四十分鐘' } : null };
+    await done(field, '{me} 的四十分鐘 ☕', 4, '充好電了，回家吧');
+    return { mian: 4, memory: first ? { id: 'cafe', icon: '☕', title: '她不只是媽媽，她是 {me}' } : null };
   }
 
   /* ── 網球：發球練習（球拋到最高點時發球）── */
@@ -1838,7 +1845,7 @@ window.MD = window.MD || {};
     await tapNext(sc.field);
     stats.remove();
     // 他寫的信
-    await MD.ui.popup(`<p class="q">${esc(F('給媽媽：\n\n小時候，我的鞋子常常不見。\n你每次都蹲下來，陪我一起找。\n\n你帶我去網球場、去公園、去阿嬤家。\n下雨天，你在客廳陪我打氣球網球。\n\n國中以後，我變得不太說話。\n可是我都知道，你在轉角等我。\n\n媽，謝謝你。\n你是全世界最好的撿球搭檔。\n以後換我陪你，去你想去的地方。\n\n——{kid}（15 歲）'))}</p><p class="tap" style="text-align:center">點一下，把信收好</p>`, { cls: 'letter' });
+    await MD.ui.popup(`<p class="q">${esc(F('給媽媽：\n\n小時候，我的鞋子常常不見。\n你每次都蹲下來，陪我一起找。\n\n你帶我去網球場、去公園、去阿嬤家。\n下雨天，你在客廳陪我打氣球網球。\n\n國中以後，我變得不太說話。\n可是我都知道，你在轉角等我。\n\n媽，謝謝你。\n你是全世界最好的撿球搭檔。\n以後換我陪你，去你想去的地方。\n\n——{kid}（15 歲）\n\nP.S. 我知道你的名字是 {me}。\n以後你也要常常當 {me} 喔。'))}</p><p class="tap" style="text-align:center">點一下，把信收好</p>`, { cls: 'letter' });
     sc.field.querySelector('.mini-bubble')?.remove();
     return { mian: 20, memory: { id: 'finale', icon: '💌', title: '十五歲的他寫給你的信' } };
   }

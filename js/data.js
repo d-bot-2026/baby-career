@@ -51,7 +51,7 @@ MD.CARDS = {
               levels: [{ at: 0, task: '撿葉子', act: 'leaves' }, { at: 0, task: '溜滑梯', act: 'slide' }, { at: 2, task: '吹泡泡', act: 'bubbles' }] },
   market:   { place: 'market', name: '傳統市場', icon: '🧺', energy: 0, full: 0,
               levels: [{ at: 0, task: '買新食材', act: 'market' }] },
-  cafe:     { place: 'cafe', name: '媽媽的咖啡時間', icon: '☕', energy: 1, full: 0, calm: true, mom: true,
+  cafe:     { place: 'cafe', name: '{me} 的咖啡時間', icon: '☕', energy: 1, full: 0, calm: true, mom: true,
               levels: [{ at: 0, task: '一個人的四十分鐘', act: 'cafe' }] },
   homework: { place: 'home', name: '陪寫功課', icon: '📓', energy: -1, full: -1, calm: true,
               levels: [{ at: 0, task: '守護專注力', act: 'homework' }] },
