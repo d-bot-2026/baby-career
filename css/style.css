@@ -659,3 +659,7 @@ body[data-stage="jh"] .trio .t-kid { max-width: 124px; }
 .ending p { font-family: var(--font-story); line-height: 1.8; text-shadow: 0 1px 6px rgba(60,40,90,.5); }
 .end-thanks { font-size: 19px; }
 .ending .btn:not(.primary) { color: var(--ink); }
+
+/* 媽媽一個人的時候，她是 Mumu */
+.walkers.solo::before { content: attr(data-me); position: absolute; left: 6px; top: -18px; background: var(--candy); color: #fff; font-size: 11px; font-weight: 700; padding: 1px 8px; border-radius: 999px; box-shadow: var(--shadow); white-space: nowrap; }
+.walkers.solo.flip::before { transform: scaleX(-1); }
