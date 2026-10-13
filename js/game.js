@@ -138,21 +138,14 @@ window.MD = window.MD || {};
     if (holiday) s.flags.holidayWeek = week;   // 一週最多放一次假
     const school = !we && !holiday;
     const plan = [{ slot: 'breakfast', kind: 'meal' }];
+    // 每個年級都一樣：早餐 → 上午（上學日在學校，中午吃前一晚準備的便當；放假就地吃午餐）→ 下午 → 傍晚 → 晚餐
+    // 晚餐後是家庭時光和準備明天的便當（eveningAtHome）
     const jh = MD.stage() === 'jh';
-    if (school && jh) {
-      // 國中：白天整天在學校（中午吃便當），傍晚一個行程，晚餐後還有一個（補習、功課）
-      plan.push({ slot: 'day', kind: 'act', card: 'school', fixed: true });
-      plan.push({ slot: 'evening', kind: 'act' });
-      plan.push({ slot: 'dinner', kind: 'meal' });
-      plan.push({ slot: 'night', kind: 'act' });
-    } else {
-      // 上學日：上午在學校，中午吃前一晚準備的便當；放假：上午的行程結束後，就地吃午餐
-      if (school) plan.push({ slot: 'morning', kind: 'act', card: 'school', fixed: true });
-      else { plan.push({ slot: 'morning', kind: 'act' }); plan.push({ slot: 'lunch', kind: 'meal' }); }
-      plan.push(tennisDay ? { slot: 'pm1', kind: 'act', card: 'tennis', fixed: true } : { slot: 'pm1', kind: 'act' });
-      plan.push({ slot: 'evening', kind: 'act' });
-      plan.push({ slot: 'dinner', kind: 'meal' });
-    }
+    if (school) plan.push({ slot: jh ? 'day' : 'morning', kind: 'act', card: 'school', fixed: true });
+    else { plan.push({ slot: 'morning', kind: 'act' }); plan.push({ slot: 'lunch', kind: 'meal' }); }
+    plan.push(tennisDay ? { slot: 'pm1', kind: 'act', card: 'tennis', fixed: true } : { slot: 'pm1', kind: 'act' });
+    plan.push({ slot: 'evening', kind: 'act' });
+    plan.push({ slot: 'dinner', kind: 'meal' });
     s.kid = { full: 1, energy: 4 };
     // Ethan 今天的心願（只挑已經做得到的）
     const wishes = MD.WISHES.filter(w => (!w.stages || w.stages.includes(MD.stage())) && (w.type === 'card' ? cardOk(w.id) : s.dishes.includes(w.id)));
@@ -282,7 +275,7 @@ window.MD = window.MD || {};
         const ok = await MD.ui.confirm(`今天要幫${F('{kid}')}請假嗎？<br><small>上午會空出來，可以排其他行程；午餐就在上午去的地方吃。</small>`, '請假', '照常上學');
         if (!ok) return;
         t.leave = true;
-        x.card = null; x.fixed = false;
+        x.card = null; x.fixed = false; x.slot = 'morning';
         t.plan.splice(t.plan.indexOf(x) + 1, 0, { slot: 'lunch', kind: 'meal' });
         renderPlan();
         return;
@@ -496,7 +489,7 @@ window.MD = window.MD || {};
       for (const k of d.nut) t.nut[k]++;
     } else {
       const c = MD.CARDS[x.card];
-      if (x.card === 'school' && t.at === 'home' && MD.hasTrait('adhd') && (s.day === 1 || Math.random() < .35)) merge(await MD.ACTS[MD.stage() === 'jh' ? 'forgot' : 'shoes']());
+      if (x.card === 'school' && t.at === 'home' && MD.hasTrait('adhd') && (s.day === 1 || Math.random() < .35)) merge(await MD.ACTS[MD.stageAtLeast('high') ? 'forgot' : 'shoes']());
       await walkTo(c.place, x.card === 'cafe' || !!t.kidAway);
       const lv = cardLevel(x.card);
       const fed = s.kid.full >= 2;
@@ -695,7 +688,7 @@ window.MD = window.MD || {};
       <div class="ending">
         <div class="end-family">${MD.art.char('mom', 'happy')}${MD.art.char('dad', 'happy')}${MD.art.char('kid', 'smile')}</div>
         <h2>我的寶貝事業</h2>
-        <p>這些年，你帶著他走過 ${s.day} 天。<br>累積了 ${s.mian} 綿、${s.memories.length} 個回憶、${s.fridge.length} 張冰箱上的畫。</p>
+        <p>這些年，你帶著他走過 ${s.day} 天。<br>累積了 ${s.mian} 綿、${s.memories.length} 個回憶、${s.fridge.length} 張冰箱上的畫和紙條。</p>
         <p class="end-thanks">謝謝你，一直是他的撿球搭檔。</p>
         <div class="night-btns">
           <button class="btn primary" id="e-album">📔 翻翻回憶</button>

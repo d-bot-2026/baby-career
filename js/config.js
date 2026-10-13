@@ -74,5 +74,5 @@ MD.stageAtLeast = st => MD.STAGE_ORDER.indexOf(MD.stage()) >= MD.STAGE_ORDER.ind
 MD.line = function (key) {
   const own = (MD.LINES[MD.stage()] || {})[key] || [];
   const common = MD.LINES.common[key] || [];
-  return MD.pick([...own, ...common]);
+  return MD.pick(MD.stage() === 'jh' && own.length ? own : [...own, ...common]);
 };

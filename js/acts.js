@@ -1087,8 +1087,9 @@ window.MD = window.MD || {};
   async function lunch(ctx) {
     const d = MD.DISHES[ctx.dish];
     const at = ctx.at || 'home';
-    const where = at === 'home' ? '' : `在${MD.PLACES[at].name}`;
-    const { field, foot } = open(PLACE_BG[at] || at, `午餐${where ? '・' + where : ''}：${d.name}`, '');
+    const picnic = ['home', 'park', 'tennis', 'beach', 'grandma', 'market', 'nightmarket', 'cafe'].includes(at);
+    const where = at === 'home' ? '' : picnic ? `在${MD.PLACES[at].name}` : `${MD.PLACES[at].name}旁邊的小公園`;
+    const { field, foot } = open(picnic ? PLACE_BG[at] || at : 'park', `午餐${where ? '・' + where : ''}：${d.name}`, '');
     const mian = await eat(field, foot, ctx.dish);
     await done(field, '吃飽了，下午繼續', mian);
     return { mian };
@@ -1299,7 +1300,7 @@ window.MD = window.MD || {};
   async function family() {
     const pool = { whack: dad, dadCook, photo, horse, flowers, laundry, oldPhotos };
     if (MD.stageAtLeast('high')) pool.kidCooks = kidCooks;
-    if (MD.stage() === 'jh') delete pool.horse;   // 國中生太大了，爸爸背不動
+    if (MD.stageAtLeast('high')) delete pool.horse;   // 高年級以上太大了，爸爸背不動
     const last = MD.state.flags.lastFamily;
     const id = pick(Object.keys(pool).filter(k => k !== last));
     MD.state.flags.lastFamily = id;
@@ -1872,7 +1873,7 @@ window.MD = window.MD || {};
       <div><b>${s.day}</b><small>天</small></div>
       <div><b>${s.mian}</b><small>綿</small></div>
       <div><b>${s.dishes.length}</b><small>道會做的菜</small></div>
-      <div><b>${s.fridge.length}</b><small>張冰箱上的畫</small></div>
+      <div><b>${s.fridge.length}</b><small>張冰箱上的畫和紙條</small></div>
       <div><b>${s.memories.length}</b><small>個回憶</small></div>
       <div><b>${s.dadHits}</b><small>次爸爸飛到天邊</small></div>`;
     sc.field.appendChild(stats);

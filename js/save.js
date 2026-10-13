@@ -4,7 +4,7 @@
 window.MD = window.MD || {};
 
 MD.SAVE_KEY = 'baby-career-save';
-MD.SAVE_VERSION = 6;
+MD.SAVE_VERSION = 7;
 
 MD.newState = function () {
   return {
@@ -57,6 +57,11 @@ MD.MIGRATIONS = {
   5: s => {
     if (s.today && !s.today.nightDone) s.today = null;
     if (s.nextBento && !s.nextBento.nut && s.nextBento.by !== 'dad') s.nextBento = null;
+    return s;
+  },
+  // v6 → v7：國中也是「下午、傍晚」兩個行程，拿掉晚餐後的「晚上」
+  6: s => {
+    if (s.today && !s.today.nightDone) s.today = null;
     return s;
   },
 };
