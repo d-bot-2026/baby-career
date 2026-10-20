@@ -141,7 +141,7 @@ window.MD = window.MD || {};
     // 每個年級都一樣：早餐 → 上午（上學日在學校，中午吃前一晚準備的便當；放假就地吃午餐）→ 下午 → 傍晚 → 晚餐
     // 晚餐後是家庭時光和準備明天的便當（eveningAtHome）
     const jh = MD.stage() === 'jh';
-    if (school) plan.push({ slot: jh ? 'day' : 'morning', kind: 'act', card: 'school', fixed: true });
+    if (school) plan.push({ slot: 'morning', kind: 'act', card: 'school', fixed: true });
     else { plan.push({ slot: 'morning', kind: 'act' }); plan.push({ slot: 'lunch', kind: 'meal' }); }
     plan.push(tennisDay ? { slot: 'pm1', kind: 'act', card: 'tennis', fixed: true } : { slot: 'pm1', kind: 'act' });
     plan.push({ slot: 'evening', kind: 'act' });
@@ -251,7 +251,7 @@ window.MD = window.MD || {};
         ${recs.slice(0, 4).map((id, i) => {
           const c = MD.CARDS[id], lv = cardLevel(id);
           const isWish = t.wish.type === 'card' && t.wish.id === id;
-          return `<button class="card ${i === 0 ? 'top' : ''}" data-card="${id}">${isWish ? '<span class="tag">心願</span>' : i === 0 ? '<span class="tag">推薦</span>' : ''}<span class="card-icon">${c.icon}</span><b>${F(c.name)}</b><small>Lv${lv.index + 1} ${lv.task}</small></button>`;
+          return `<button class="card ${i === 0 ? 'top' : ''}" data-card="${id}">${isWish ? '<span class="tag">心願</span>' : i === 0 ? '<span class="tag">推薦</span>' : ''}<span class="card-icon">${c.icon}</span><b>${F(c.name)}</b><small>Lv${lv.index + 1} ${F(lv.task)}</small></button>`;
         }).join('')}
       </div>
       <div class="plan-actions">
@@ -275,7 +275,7 @@ window.MD = window.MD || {};
         const ok = await MD.ui.confirm(`今天要幫${F('{kid}')}請假嗎？<br><small>上午會空出來，可以排其他行程；午餐就在上午去的地方吃。</small>`, '請假', '照常上學');
         if (!ok) return;
         t.leave = true;
-        x.card = null; x.fixed = false; x.slot = 'morning';
+        x.card = null; x.fixed = false;
         t.plan.splice(t.plan.indexOf(x) + 1, 0, { slot: 'lunch', kind: 'meal' });
         renderPlan();
         return;
@@ -350,7 +350,7 @@ window.MD = window.MD || {};
       <span class="tree" style="left:4%;top:37%">🌳</span><span class="tree" style="left:96%;top:75%">🌲</span>
       <span class="tree" style="left:34%;top:1%">🌸</span><span class="tree" style="left:66%;top:56%">🌷</span>
       <div class="walkers" id="walkers" data-me="${esc(MD.state.profile.mom.ownName || '')}"><div class="w-mom">${MD.art.char('mom', 'smile')}</div><div class="w-kid">${MD.art.char('kid', 'happy')}</div><div class="w-bubble" id="w-bubble"></div></div>
-      <div class="pin" id="pin">▼</div>`;
+`;
     placeWalkers(t.at, false);
     document.querySelectorAll('.place').forEach(b => (b.onclick = () => onPlace(b.dataset.id)));
     renderStrip();
@@ -373,12 +373,9 @@ window.MD = window.MD || {};
   function updatePin() {
     const t = MD.state.today, x = t.plan[t.idx];
     document.querySelectorAll('.place').forEach(b => b.classList.remove('next'));
-    const pin = $('pin');
-    if (!x) { pin.style.display = 'none'; return; }
-    const id = itemPlace(x), p = MD.PLACES[id];
-    document.querySelector(`.place[data-id="${id}"]`).classList.add('next');
-    pin.style.display = '';
-    pin.style.left = p.pos[0] + '%'; pin.style.top = (p.pos[1] - 11) + '%';
+    if (!x) return;
+    const el = document.querySelector(`.place[data-id="${itemPlace(x)}"]`);
+    if (el) el.classList.add('next');
   }
 
   function kidBubble(text) {
@@ -509,7 +506,7 @@ window.MD = window.MD || {};
       if (nlv.index > lv.index) {
         t.memories.push({ id: `${x.card}-lv${nlv.index + 1}`, icon: c.icon, title: `${MD.fill(c.name)}升級：${nlv.task}` });
         MD.audio && MD.audio.sfx('fanfare');
-        await MD.ui.popup(`<p class="label">熟悉度提升</p><div class="big-icon">${c.icon}</div><h3>${F(c.name)} Lv${nlv.index + 1}</h3><p class="mem">下次的任務：${nlv.task}</p><p class="tap">點一下繼續</p>`);
+        await MD.ui.popup(`<p class="label">熟悉度提升</p><div class="big-icon">${c.icon}</div><h3>${F(c.name)} Lv${nlv.index + 1}</h3><p class="mem">下次的任務：${F(nlv.task)}</p><p class="tap">點一下繼續</p>`);
       }
     }
     // Ethan 的心願達成
@@ -587,7 +584,7 @@ window.MD = window.MD || {};
     renderNight();
     for (const m of t.newMilestones) {
       MD.audio && MD.audio.sfx('fanfare');
-      await MD.ui.popup(`<p class="label">${MD.art.mian(20)} 綿累積到 ${m.at}</p><div class="big-icon">${m.icon}</div><h3>${esc(m.title)}</h3><p class="tap">點一下繼續</p>`);
+      await MD.ui.popup(`<p class="label">${MD.art.mian(20)} 綿累積到 ${m.at}</p><div class="big-icon">${m.icon}</div><h3>${F(m.title)}</h3><p class="tap">點一下繼續</p>`);
     }
     // 每個年級的最後一天：升上下一個年級，門框多一道刻度
     if (s.day % MD.DAYS_PER_GRADE === 0 && s.day < 63 && !s.flags['grade' + s.day]) {
@@ -653,7 +650,7 @@ window.MD = window.MD || {};
   }
 
   const SPECIAL_INFO = {
-    exam: { title: '國中會考', icon: '📝', night: '……媽，今天謝謝你。我先睡了。（他睡得很沉）' },
+    exam: { title: '國中會考', icon: '📝', night: '……媽，今天謝謝你。我先睡了。（{他}睡得很沉）' },
     graduation: { title: '畢業典禮', icon: '🎓', night: '媽，我們明天要出發了。……我好期待。' },
     trip: { title: '全家旅行', icon: '✈️', night: '媽，這是我這輩子最棒的旅行。' },
     finale: { title: '回到家', icon: '🏠' },
@@ -688,8 +685,8 @@ window.MD = window.MD || {};
       <div class="ending">
         <div class="end-family">${MD.art.char('mom', 'happy')}${MD.art.char('dad', 'happy')}${MD.art.char('kid', 'smile')}</div>
         <h2>我的寶貝事業</h2>
-        <p>這些年，你帶著他走過 ${s.day} 天。<br>累積了 ${s.mian} 綿、${s.memories.length} 個回憶、${s.fridge.length} 張冰箱上的畫和紙條。</p>
-        <p class="end-thanks">謝謝你，一直是他的撿球搭檔。</p>
+        <p>這些年，你帶著${F('{他}')}走過 ${s.day} 天。<br>累積了 ${s.mian} 綿、${s.memories.length} 個回憶、${s.fridge.length} 張冰箱上的畫和紙條。</p>
+        <p class="end-thanks">謝謝你，一直是${F('{他}')}的撿球搭檔。</p>
         <div class="night-btns">
           <button class="btn primary" id="e-album">📔 翻翻回憶</button>
           <button class="btn" id="e-free">繼續自由遊玩</button>
@@ -721,6 +718,8 @@ window.MD = window.MD || {};
     let prog = '';
     if (has) prog = `${MD.GRADE_NAMES[MD.grade()]}・${MD.WEEKDAYS[dow()]}・累積 ${s.mian} ${MD.POINT}`;
     $('title-progress').innerHTML = esc(prog);
+    $('title-tagline').textContent = MD.fill('陪{他}長大的這些年，也別忘了你自己。');
+    $('title-art').innerHTML = MD.art.duo();
   }
 
   // 開始前的說明：整段是國小一年級到國中三年級，也可以從比較大的年級開始
@@ -733,7 +732,7 @@ window.MD = window.MD || {};
   function chooseStartGrade() {
     return MD.ui.popup(`<div class="start-intro">
         <p class="label" style="justify-content:flex-start">開始之前</p>
-        <h3>陪他，從小學走到國中畢業</h3>
+        <h3>陪${F('{他}')}，從小學走到國中畢業</h3>
         <p>這個遊戲從國小一年級開始，一路到國中三年級的會考、畢業和一趟全家旅行。每個年級是遊戲裡的 7 天，每天大約玩 5 到 10 分鐘。<br>如果不想玩這麼久，也可以從比較大的年紀開始。</p>
         <div class="start-grid">${START_GRADES.map((o, i) => `<button data-v="${o.g}" class="${i === 0 ? 'rec' : ''}"><b>${o.label}</b><small>${o.note}</small></button>`).join('')}</div>
       </div>`, { buttons: true }).then(v => +v || 0);
@@ -743,10 +742,26 @@ window.MD = window.MD || {};
     if (MD.hasSave()) {
       if (!(await MD.ui.confirm('要從頭重新開始嗎？<br><small>所有進度都會重來。</small>', '重新開始', '先不要'))) return;
     }
-    const g = await chooseStartGrade();
-    if (!g) return;
+    const choice = await MD.ui.popup(`<div class="start-intro">
+        <p class="label" style="justify-content:flex-start">先認識你們家</p>
+        <h3>要用預設的一家人，還是設定你們家？</h3>
+        <div class="template-row">${MD.art.char('mom', 'smile')}${MD.art.char('kid', 'happy')}</div>
+        <div class="start-grid one">
+          <button data-v="mumu" class="rec"><b>${MD.TEMPLATES.mumu.label}</b><small>${MD.TEMPLATES.mumu.note}，直接開始</small></button>
+          <button data-v="custom"><b>設定我們家</b><small>名字、性別、長相、特質，之後也能在設定裡改</small></button>
+        </div>
+      </div>`, { buttons: true });
+    if (!choice) return;
+    let profile = JSON.parse(JSON.stringify(MD.TEMPLATES.mumu.profile));
+    if (choice === 'custom') {
+      profile = await openSetup(profile, '下一步');
+      if (!profile) { goTitle(); return; }
+    }
     const settings = MD.state.settings;
-    MD.state = MD.newState(); MD.state.settings = settings;
+    const prev = MD.state;
+    MD.state = MD.newState(); MD.state.settings = settings; MD.state.profile = profile;
+    const g = await chooseStartGrade();
+    if (!g) { MD.state = prev; goTitle(); return; }
     const s = MD.state;
     s.day = (g - 1) * MD.DAYS_PER_GRADE + 1;
     s.heightMarks = g - 1;                     // 之前的年級，門框上已經有刻度了
@@ -761,7 +776,7 @@ window.MD = window.MD || {};
   function openAlbum() {
     const s = MD.state;
     $('album-grid').innerHTML = s.memories.length
-      ? s.memories.slice().reverse().map(m => `<div class="polaroid"><div class="pic"><span class="pic-big">${m.icon}</span><span class="pic-day">Day ${m.day}</span></div><h3>${esc(m.title)}</h3></div>`).join('')
+      ? s.memories.slice().reverse().map(m => `<div class="polaroid"><div class="pic"><span class="pic-big">${m.icon}</span><span class="pic-day">Day ${m.day}</span></div><h3>${F(m.title)}</h3></div>`).join('')
       : `<p class="empty">一起出門，就會慢慢累積回憶。</p>`;
     show('album');
   }
@@ -776,7 +791,6 @@ window.MD = window.MD || {};
 
   function openSettings() {
     const s = MD.state, p = s.profile;
-    const traitNames = { asperger: '亞斯伯格特質', adhd: 'ADHD 特質' };
     $('settings').innerHTML = `
       <div class="set-card">
         <h3>震動回饋</h3>
@@ -792,14 +806,15 @@ window.MD = window.MD || {};
         <p style="margin:8px 0 0">iPhone 如果沒有聲音，請確認側邊的靜音開關沒有打開。</p>
       </div>
       <div class="set-card">
-        <h3>角色設定 <span class="badge">之後的版本開放自訂</span></h3>
+        <h3>我們家</h3>
+        <div class="template-row small">${MD.art.char('mom', 'smile')}${MD.art.char('kid', 'happy')}</div>
         <table class="profile-table">
-          <tr><td>孩子</td><td>${esc(p.kid.name)}（${p.kid.age} 歲，${p.kid.gender === 'girl' ? '女孩' : '男孩'}，獨生子）</td></tr>
-          <tr><td>孩子的特質</td><td>${p.kid.traits.map(t => traitNames[t] || t).join('、')}</td></tr>
-          <tr><td>最愛的菜</td><td>${esc(MD.DISHES[p.kid.favoriteDish].name)}</td></tr>
-          <tr><td>她的名字</td><td>${esc(p.mom.ownName || '')}</td></tr>
-          <tr><td>媽媽喜歡的</td><td>${p.mom.likes.map(esc).join('、')}</td></tr>
+          <tr><td>孩子</td><td>${esc(p.kid.name)}（${p.kid.gender === 'girl' ? '女孩' : '男孩'}）</td></tr>
+          <tr><td>孩子的特質</td><td>${p.kid.traits.length ? p.kid.traits.map(t => (MD.TRAIT_INFO[t] || {}).name || t).join('、') : '沒有特別設定'}</td></tr>
+          <tr><td>你的名字</td><td>${esc(p.mom.ownName || '')}</td></tr>
+          <tr><td>喜歡喝的</td><td>${esc(p.mom.drink)}</td></tr>
         </table>
+        <div class="row"><button class="btn small" id="btn-edit-family">修改</button></div>
       </div>
       <div class="set-card">
         <h3>備份進度</h3>
@@ -821,6 +836,11 @@ window.MD = window.MD || {};
         <div class="row"><button class="btn small" id="btn-wipe" style="color:#c25b6e">清除所有資料</button></div>
       </div>`;
     $('exp').value = MD.exportCode();
+    $('btn-edit-family').onclick = async () => {
+      const np = await openSetup(s.profile, '儲存');
+      if (np) { s.profile = np; ensureDefaults(); MD.save(); MD.ui.toast('已更新 ✓'); }
+      openSettings();
+    };
     $('set-vib').onclick = e => { const v = e.target.dataset.v; if (!v) return; s.settings.vibrate = v === '1'; MD.save(); openSettings(); };
     $('set-music').onclick = e => { const v = e.target.dataset.v; if (!v) return; s.settings.music = v === '1'; MD.save(); MD.audio.apply(); openSettings(); };
     $('set-sfx').onclick = e => { const v = e.target.dataset.v; if (!v) return; s.settings.sfx = v === '1'; MD.save(); MD.audio.apply(); openSettings(); };
@@ -837,6 +857,71 @@ window.MD = window.MD || {};
       MD.resetSave(); goTitle();
     };
     show('settings');
+  }
+
+  /* ── 我們家：名字、性別、長相、特質、喜歡的飲料 ──
+   * 回傳新的 profile（按返回則回傳 null）。畫面上的人物會即時跟著變。 */
+  function openSetup(base, okLabel = '完成') {
+    const p = JSON.parse(JSON.stringify(base));
+    p.mom.look = Object.assign({}, MD.DEFAULT_PROFILE.mom.look, p.mom.look);
+    p.kid.look = Object.assign({}, MD.DEFAULT_PROFILE.kid.look, p.kid.look);
+    return new Promise(resolve => {
+      const seg = (key, opts, cur) => `<div class="seg wrap" data-k="${key}">${Object.entries(opts).map(([v, n]) => `<button data-v="${v}" class="${v === cur ? 'on' : ''}">${n}</button>`).join('')}</div>`;
+      const sw = (key, cur, list) => `<div class="swatches" data-k="${key}">${Object.entries(list).map(([v, o]) => `<button data-v="${v}" class="${v === cur ? 'on' : ''}" style="--c:${o.c}" aria-label="${o.name}"></button>`).join('')}</div>`;
+      const render = () => {
+        const k = p.kid, m = p.mom, girl = k.gender === 'girl';
+        if (!MD.LOOK.kidHair[k.gender][k.look.hair]) k.look.hair = Object.keys(MD.LOOK.kidHair[k.gender])[0];
+        $('setup-body').innerHTML = `
+          <div class="setup-preview"><div>${MD.art.char('mom', 'smile', p)}</div><div class="kid">${MD.art.char('kid', 'happy', p)}</div></div>
+          <p class="setup-note">這些設定之後都可以在「設定」裡修改。</p>
+          <div class="set-card">
+            <h3>孩子</h3>
+            <label class="field"><span>名字</span><input id="su-kid" maxlength="10" value="${esc(k.name)}" placeholder="Ethan"></label>
+            <div class="field"><span>性別</span>${seg('kid.gender', { boy: '男孩', girl: '女孩' }, k.gender)}</div>
+            <div class="field"><span>髮型</span>${seg('kid.look.hair', MD.LOOK.kidHair[k.gender], k.look.hair)}</div>
+            <div class="field"><span>髮色</span>${sw('kid.look.hairColor', k.look.hairColor, MD.LOOK.hairColor)}</div>
+            <div class="field"><span>膚色</span>${sw('kid.look.skin', k.look.skin, MD.LOOK.skin)}</div>
+            <div class="field top"><span>特質</span><div class="traits">${Object.entries(MD.TRAIT_INFO).map(([t, o]) => `<button data-t="${t}" class="trait ${k.traits.includes(t) ? 'on' : ''}"><b>${o.name}</b><small>${o.desc}</small></button>`).join('')}</div></div>
+            <p class="hint">特質會改變一些日常：例如 ADHD 特質的孩子出門前常找不到東西，亞斯特質的孩子放學時不一定想要抱抱。</p>
+          </div>
+          <div class="set-card">
+            <h3>你</h3>
+            <label class="field"><span>你的名字</span><input id="su-me" maxlength="10" value="${esc(m.ownName || '')}" placeholder="Mumu"></label>
+            <p class="hint">在咖啡店裡，你不是誰的媽媽，你是你自己。</p>
+            <div class="field"><span>髮型</span>${seg('mom.look.hair', MD.LOOK.momHair, m.look.hair)}</div>
+            <div class="field"><span>髮色</span>${sw('mom.look.hairColor', m.look.hairColor, MD.LOOK.hairColor)}</div>
+            <div class="field"><span>膚色</span>${sw('mom.look.skin', m.look.skin, MD.LOOK.skin)}</div>
+            <div class="field"><span>眼鏡</span>${seg('mom.look.glasses', { no: '不戴', yes: '戴' }, m.look.glasses ? 'yes' : 'no')}</div>
+            <div class="field"><span>喜歡喝的</span>${seg('mom.drink', Object.fromEntries(MD.DRINKS.map(d => [d, d])), m.drink)}</div>
+          </div>
+          <div class="set-card soon">
+            <h3>之後會開放</h3>
+            <p class="hint">孩子的興趣運動（目前是網球）、個性與脾氣、另一半的稱呼、兄弟姊妹。</p>
+          </div>
+          <div class="setup-actions"><button class="btn primary" id="su-ok">${okLabel}</button></div>`;
+        const keep = () => { k.name = MD.cleanName($('su-kid').value, k.name || 'Ethan'); m.ownName = MD.cleanName($('su-me').value, m.ownName || 'Mumu'); };
+        document.querySelectorAll('#setup-body [data-k]').forEach(g => (g.onclick = e => {
+          const b = e.target.closest('button'); if (!b) return;
+          keep();
+          const path = g.dataset.k.split('.'), last = path.pop();
+          const obj = path.reduce((o, x) => o[x], p);
+          let v = b.dataset.v;
+          if (last === 'glasses') v = v === 'yes';
+          obj[last] = v;
+          render();
+        }));
+        document.querySelectorAll('#setup-body .trait').forEach(b => (b.onclick = () => {
+          keep();
+          const t = b.dataset.t;
+          k.traits = k.traits.includes(t) ? k.traits.filter(x => x !== t) : [...k.traits, t];
+          render();
+        }));
+        $('su-ok').onclick = () => { keep(); resolve(p); };
+      };
+      $('btn-setup-back').onclick = () => resolve(null);
+      render();
+      show('setup');
+    });
   }
 
   /* ── 啟動 ── */

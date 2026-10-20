@@ -17,6 +17,7 @@ MD.DEFAULT_PROFILE = {
     likes: ['咖啡', '網球', '法國文學'],
     drink: '拿鐵',
     friend: 'Sophie',
+    look: { hair: 'bob', hairColor: 'espresso', skin: 'light', glasses: false },
   },
   kid: {
     name: 'Ethan',
@@ -26,11 +27,34 @@ MD.DEFAULT_PROFILE = {
     traits: ['asperger', 'adhd'],
     sport: 'tennis',
     favoriteDish: 'onigiri',   // 天天吃都不膩的那一道
+    look: { hair: 'short', hairColor: 'black', skin: 'light' },
   },
   dad: {
     name: '爸爸',
   },
 };
+
+/* ── 客製化選項 ──
+ * 開新遊戲時可以「用預設的一家人」或「自己設定」；之後在設定裡也能改。
+ * 目前開放：名字、性別、外觀、特質、喜歡的飲料。
+ * 之後要開放的（需要新的內容）：興趣運動、個性脾氣、另一半的稱呼、兄弟姊妹。
+ */
+MD.LOOK = {
+  skin: { light: { name: '白皙', c: '#f2d7c3' }, warm: { name: '小麥', c: '#e2b893' }, tan: { name: '健康', c: '#c08e6a' } },
+  hairColor: { black: { name: '黑', c: '#2a2420' }, espresso: { name: '深咖啡', c: '#3a2a24' }, brown: { name: '棕', c: '#6b4530' }, honey: { name: '蜂蜜', c: '#9a6a3e' } },
+  momHair: { bob: '鮑伯短髮', long: '長髮', bun: '丸子頭', pixie: '俐落短髮' },
+  kidHair: { boy: { short: '短髮', curly: '捲捲頭', spiky: '刺刺頭' }, girl: { bob: '妹妹頭', pony: '馬尾', twin: '雙馬尾' } },
+};
+MD.DRINKS = ['拿鐵', '美式', '抹茶拿鐵', '熱可可', '伯爵茶'];
+MD.TRAIT_INFO = {
+  adhd: { name: 'ADHD 特質', desc: '坐不住、常忘東西，點子很多' },
+  asperger: { name: '亞斯特質', desc: '喜歡固定的事物，對聲音、觸感、界線很敏感' },
+};
+// 模板：一整組設定。之後可以加更多家庭
+MD.TEMPLATES = {
+  mumu: { label: 'Mumu 與 Ethan', note: '預設的一家人', profile: MD.DEFAULT_PROFILE },
+};
+MD.cleanName = (v, fallback) => (String(v || '').replace(/[<>&"'{}]/g, '').trim().slice(0, 10) || fallback);
 
 MD.fill = function (text, profile) {
   if (!text) return '';

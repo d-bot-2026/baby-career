@@ -43,7 +43,7 @@ MD.PLACES.nightmarket.icon = '🎡';
  * energy / full：做完後精神、肚子的變化；calm：比較放鬆；stages：哪些階段可以排
  */
 MD.CARDS = {
-  school:   { place: 'school', name: '上學', icon: '🎒', energy: -1, full: -1, noRec: true,
+  school:   { place: 'school', name: '上課', icon: '🎒', energy: -1, full: -1, noRec: true,
               levels: [{ at: 0, task: '接放學', act: 'school' }] },
   tennis:   { place: 'tennis', name: '網球課', icon: '🎾', energy: -2, full: -2,
               levels: [{ at: 0, task: '發球練習', act: 'serve' }, { at: 0, task: '撿球', act: 'pickup' }, { at: 2, task: '來回對打', act: 'rally' }, { at: 4, task: '小小比賽', act: 'match' }] },
@@ -66,13 +66,13 @@ MD.CARDS = {
   art:      { place: 'art', name: '畫畫教室', icon: '🎨', energy: 0, full: 0, calm: true, stages: ['mid', 'high', 'jh'],
               levels: [{ at: 0, task: '一起上色', act: 'paint' }] },
   bookstore:{ place: 'bookstore', name: '逛書店', icon: '📖', energy: 0, full: 0, calm: true, stages: ['high', 'jh'],
-              levels: [{ at: 0, task: '幫他挑一本書', act: 'bookshop' }] },
+              levels: [{ at: 0, task: '幫{他}挑一本書', act: 'bookshop' }] },
   beach:    { place: 'beach', name: '去海邊', icon: '🐚', energy: -1, full: -1, stages: ['high', 'jh'], weekend: true,
               levels: [{ at: 0, task: '撿貝殼', act: 'shells' }] },
   nightmarket:{ place: 'nightmarket', name: '逛夜市', icon: '🎡', energy: -1, full: 1, stages: ['high', 'jh'],
               levels: [{ at: 0, task: '套圈圈', act: 'ringtoss' }] },
   cram:     { place: 'cram', name: '補習班', icon: '✏️', energy: -2, full: -1, stages: ['jh'],
-              levels: [{ at: 0, task: '陪他背單字', act: 'flashcards' }] },
+              levels: [{ at: 0, task: '陪{他}背單字', act: 'flashcards' }] },
 };
 
 /* ── 菜色（48 道）──
@@ -239,7 +239,7 @@ MD.BENTO = {
       yes: '跑了八百公尺，還好便當很多。全部吃光光！', no: '體育課後好餓……便當一下就吃完了。',
       jh: { yes: '練完球，便當很夠。……謝啦。', no: '練完球好餓，跟同學借了一包餅乾。' } },
     { id: 'exam', stages: ['mid', 'high', 'jh'], slot: 'main',
-      note: '要考試，他有點緊張。', hint: '目標：放一樣他最愛的', kid: '明天要考試……我有一點緊張。',
+      note: '要考試，{他}有點緊張。', hint: '目標：放一樣{他}最愛的', kid: '明天要考試……我有一點緊張。',
       good: o => MD.tag(o, 'love'), check: it => it.some(o => MD.tag(o, 'love')), tip: '緊張的時候，吃到最愛的東西會安心一點。',
       yes: '中午吃到最喜歡的，下午考試好像比較會了。', no: '便當很好吃。可是考試前我比較想吃炸雞。',
       jh: { yes: '中午吃到喜歡的，考完覺得還可以。', no: '考試……還好啦。便當有吃完。' } },
@@ -248,17 +248,17 @@ MD.BENTO = {
       good: o => !MD.tag(o, 'spoil'), check: it => !it.some(o => MD.tag(o, 'spoil')), tip: '天熱時，美乃滋和海鮮放一個上午容易壞。',
       yes: '今天好熱，可是便當還是好好的。', no: '便當有一點點怪怪的味道，我就沒吃完。' },
     { id: 'noveg', stages: ['low', 'mid', 'high'], slot: 'side',
-      note: '他最近都不肯吃青菜。', hint: '目標：讓他吃到青菜（藏起來也可以）', kid: '我明天不要青菜喔。一根都不要。',
-      good: o => MD.tag(o, 'sneaky'), check: it => it.some(o => MD.tag(o, 'sneaky')) || (it.some(o => o.nut.includes('v')) && it.some(o => MD.tag(o, 'love'))), tip: '把青菜藏在他喜歡的東西裡，比較容易吃下去。',
+      note: '{他}最近都不肯吃青菜。', hint: '目標：讓{他}吃到青菜（藏起來也可以）', kid: '我明天不要青菜喔。一根都不要。',
+      good: o => MD.tag(o, 'sneaky'), check: it => it.some(o => MD.tag(o, 'sneaky')) || (it.some(o => o.nut.includes('v')) && it.some(o => MD.tag(o, 'love'))), tip: '把青菜藏在{他}喜歡的東西裡，比較容易吃下去。',
       yes: '玉子燒裡面綠綠的是什麼？……算了，好吃。', no: '青菜……我留給便當盒了。' },
     { id: 'sauce', slot: 'main',
-      note: '他說醬汁跑到飯上，整個便當就「壞掉了」。', hint: '目標：不放有醬汁的菜', kid: '醬汁不可以碰到飯喔。一點點都不行。',
-      good: o => !MD.tag(o, 'saucy'), check: it => !it.some(o => MD.tag(o, 'saucy')), tip: '他很在意食物的界線，有醬汁的菜下次分開裝。',
+      note: '{他}說醬汁跑到飯上，整個便當就「壞掉了」。', hint: '目標：不放有醬汁的菜', kid: '醬汁不可以碰到飯喔。一點點都不行。',
+      good: o => !MD.tag(o, 'saucy'), check: it => !it.some(o => MD.tag(o, 'saucy')), tip: '{他}很在意食物的界線，有醬汁的菜下次分開裝。',
       yes: '每一格都乾乾淨淨的。今天的便當很完美。', no: '醬汁跑到飯上了。我還是吃了，可是吃得很慢。',
-      jh: { yes: '便當很整齊。（他沒說什麼，但便當盒洗好才拿出來）', no: '醬汁滲到飯了。……還是有吃完啦。' } },
+      jh: { yes: '便當很整齊。（{他}沒說什麼，但便當盒洗好才拿出來）', no: '醬汁滲到飯了。……還是有吃完啦。' } },
     { id: 'cool', stages: ['high', 'jh'], slot: 'side',
       note: '「不要再放可愛的東西了啦，同學都在看。」', hint: '目標：不要可愛造型', kid: '媽，明天不要放章魚香腸了啦……同學會看。',
-      good: o => !MD.tag(o, 'cute'), check: it => !it.some(o => MD.tag(o, 'cute')), tip: '他長大了，可愛的造型留在回憶裡就好。',
+      good: o => !MD.tag(o, 'cute'), check: it => !it.some(o => MD.tag(o, 'cute')), tip: '{他}長大了，可愛的造型留在回憶裡就好。',
       yes: '今天的便當很正常。很好。', no: '同學看到章魚香腸了。……沒事啦。' },
   ],
 };
@@ -291,7 +291,7 @@ MD.GRADE_UP = {
   4: '四年級了。我今天幫一年級的小朋友找到他的教室。',
   5: '五年級了。媽媽，我的腳比你的大了耶。',
   6: '六年級了……明年就要畢業了。時間跑好快。',
-  7: '國中了。媽，以後不用送我到校門口了，到路口就好。（他回頭揮了一下手）',
+  7: '國中了。媽，以後不用送我到校門口了，到路口就好。（{他}回頭揮了一下手）',
   8: '國二了。媽，謝謝你每天幫我準備早餐。……我只是突然想說。',
   9: '國三了。明年會考。媽，你不用緊張，我會加油的。',
 };

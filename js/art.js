@@ -17,11 +17,21 @@ window.MD = window.MD || {};
     dad: { hair: '#2a2622', shirt: '#7c95b8', accent: '#f3ece2' },
   };
 
-  // 孩子的衣服依成長階段變化：薄荷綠 → 霧藍 → 暖黃 → 國中白襯衫配深藍領帶
+  // 孩子的衣服依成長階段變化：薄荷綠 → 霧藍 → 暖黃 → 國中白襯衫（男生領帶、女生領結）
   const KID_LOOK = { low: '#8fc1a9', mid: '#8eaad0', high: '#e8b45c', jh: '#eeeae2' };
-  function kidLook() {
-    const st = (MD.stage && MD.state) ? MD.stage() : 'low';
-    return Object.assign({}, CHAR.kid, { shirt: KID_LOOK[st], uniform: st === 'jh', stage: st });
+  const profileOf = p => p || (MD.state && MD.state.profile) || MD.DEFAULT_PROFILE;
+  function lookOf(who, p) {
+    const pr = profileOf(p), base = CHAR[who] || CHAR.kid;
+    const L = (who === 'mom' || who === 'kid') && pr[who].look || {};
+    const skin = (MD.LOOK.skin[L.skin] || MD.LOOK.skin.light).c;
+    const hairC = MD.LOOK.hairColor[L.hairColor] ? MD.LOOK.hairColor[L.hairColor].c : base.hair;
+    const c = Object.assign({}, base, { skin, hair: hairC, style: L.hair, glasses: !!L.glasses });
+    if (who === 'kid') {
+      const st = p ? 'low' : (MD.stage && MD.state) ? MD.stage() : 'low';
+      Object.assign(c, { shirt: KID_LOOK[st], uniform: st === 'jh', stage: st, girl: pr.kid.gender === 'girl' });
+      if (!c.style) c.style = c.girl ? 'bob' : 'short';
+    }
+    return c;
   }
 
   const EXPR = {
@@ -85,15 +95,34 @@ window.MD = window.MD || {};
       default: return '';
     }
   }
+  const GLASSES = `<circle cx="49" cy="64" r="7.5" fill="none" stroke="${INK}" stroke-width="1.8"/><circle cx="71" cy="64" r="7.5" fill="none" stroke="${INK}" stroke-width="1.8"/><path d="M56.5 63.5 h7" stroke="${INK}" stroke-width="1.8"/>`;
+  const CAP = h => `<path d="M28 62 a32 32 0 0 1 64 0 q-9 -14 -32 -14 q-23 0 -32 14z" fill="${h}"/>`;
   function hair(who, c) {
-    // 媽媽：圓臉加上兩側到下巴的短髮
-    if (who === 'mom') return `
-      <path d="M28 62 a32 32 0 0 1 64 0 q-9 -14 -32 -14 q-23 0 -32 14z" fill="${c.hair}"/>
-      <path d="M28 58 q-4 26 6 34 l9 -24z M92 58 q4 26 -6 34 l-9 -24z" fill="${c.hair}"/>
-      <path d="M40 44 q14 -8 30 -3 q-10 4 -30 3z" fill="${c.hair}"/>`;
-    if (who === 'kid') return `
-      <path d="M29 62 a31 31 0 0 1 62 0 q-6 -11 -14 -12 q-6 6 -17 4 q-11 -3 -17 2 q-9 1 -14 6z" fill="${c.hair}"/>
-      <path d="M58 30 q3 -7 10 -6 q-6 2 -6 7z" fill="${c.hair}"/>`;
+    const h = c.hair;
+    if (who === 'mom') {
+      const glasses = c.glasses ? GLASSES : '';
+      switch (c.style) {
+        case 'long': return `${CAP(h)}<path d="M28 58 q-8 40 0 58 l14 -4 q-8 -24 -3 -46z M92 58 q8 40 0 58 l-14 -4 q8 -24 3 -46z" fill="${h}"/><path d="M40 44 q14 -8 30 -3 q-10 4 -30 3z" fill="${h}"/>${glasses}`;
+        case 'bun': return `<circle cx="60" cy="27" r="11" fill="${h}"/>${CAP(h)}<path d="M29 58 q-1 9 3 14 l5 -12z M91 58 q1 9 -3 14 l-5 -12z" fill="${h}"/>${glasses}`;
+        case 'pixie': return `<path d="M28 64 a32 32 0 0 1 64 -2 q-14 -6 -26 -14 q-8 10 -38 16z" fill="${h}"/><path d="M28 60 q0 8 3 12 l3 -12z M92 60 q0 8 -3 12 l-3 -12z" fill="${h}"/>${glasses}`;
+        default: return `
+      ${CAP(h)}
+      <path d="M28 58 q-4 26 6 34 l9 -24z M92 58 q4 26 -6 34 l-9 -24z" fill="${h}"/>
+      <path d="M40 44 q14 -8 30 -3 q-10 4 -30 3z" fill="${h}"/>${glasses}`;
+      }
+    }
+    if (who === 'kid') {
+      switch (c.style) {
+        case 'curly': return `<path d="M29 62 a31 31 0 0 1 62 0 q-8 -8 -31 -8 q-23 0 -31 8z" fill="${h}"/>${[[32, 52], [38, 40], [48, 33], [60, 30], [72, 33], [82, 40], [88, 52]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="8" fill="${h}"/>`).join('')}`;
+        case 'spiky': return `<path d="M29 62 a31 31 0 0 1 62 0 q-8 -9 -31 -9 q-23 0 -31 9z" fill="${h}"/><path d="M32 46 l4 -16 l8 12 l6 -16 l8 14 l7 -15 l6 15 l8 -12 l3 16 q-12 -6 -28 -6 q-16 0 -22 8z" fill="${h}"/>`;
+        case 'bob': return `<path d="M28 62 a32 32 0 0 1 64 0 q-4 -8 -10 -10 q-10 6 -22 4 q-12 2 -22 -4 q-6 2 -10 10z" fill="${h}"/><path d="M28 58 q-3 20 4 28 l7 -20z M92 58 q3 20 -4 28 l-7 -20z" fill="${h}"/>`;
+        case 'pony': return `<path d="M29 62 a31 31 0 0 1 62 0 q-8 -10 -31 -12 q-23 2 -31 12z" fill="${h}"/><path d="M88 46 q22 4 16 34 q-4 -14 -16 -20z" fill="${h}"/><circle cx="89" cy="47" r="4" fill="#e07a5f"/>`;
+        case 'twin': return `<path d="M29 62 a31 31 0 0 1 62 0 q-8 -10 -31 -12 q-23 2 -31 12z" fill="${h}"/><path d="M30 50 q-18 6 -14 30 q6 -12 18 -18z M90 50 q18 6 14 30 q-6 -12 -18 -18z" fill="${h}"/><circle cx="31" cy="51" r="3.6" fill="#e07a5f"/><circle cx="89" cy="51" r="3.6" fill="#e07a5f"/>`;
+        default: return `
+      <path d="M29 62 a31 31 0 0 1 62 0 q-6 -11 -14 -12 q-6 6 -17 4 q-11 -3 -17 2 q-9 1 -14 6z" fill="${h}"/>
+      <path d="M58 30 q3 -7 10 -6 q-6 2 -6 7z" fill="${h}"/>`;
+      }
+    }
     if (who === 'dad') return `
       <path d="M29 60 a31 31 0 0 1 62 0 q-8 -12 -31 -12 q-23 0 -31 12z" fill="${c.hair}"/>
       <circle cx="49" cy="64" r="7.5" fill="none" stroke="${INK}" stroke-width="1.8"/>
@@ -105,18 +134,20 @@ window.MD = window.MD || {};
     if (who === 'mom') return `<rect x="30" y="92" width="60" height="80" rx="28" fill="${c.shirt}"/><path d="M52 95 q8 8 16 0" stroke="${c.accent}" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".55"/>`;
     if (who === 'dad') return `<rect x="26" y="90" width="68" height="82" rx="30" fill="${c.shirt}"/><path d="M51 93 l9 8 l9 -8" stroke="${c.accent}" stroke-width="2.6" fill="none" stroke-linejoin="round" opacity=".6"/>`;
     const deco = c.uniform
-      ? `<path d="M52 98 l8 7 l8 -7" stroke="#cfc8bb" stroke-width="2.4" fill="none" stroke-linejoin="round"/><path d="M58.5 105 h3 l1.4 22 -2.9 3 -2.9 -3z" fill="#2a3343"/>`
+      ? c.girl
+        ? `<path d="M52 98 l8 7 l8 -7" stroke="#cfc8bb" stroke-width="2.4" fill="none" stroke-linejoin="round"/><path d="M60 106 l-9 -5 v10z M60 106 l9 -5 v10z" fill="#2a3343"/><circle cx="60" cy="106" r="2.4" fill="#2a3343"/>`
+        : `<path d="M52 98 l8 7 l8 -7" stroke="#cfc8bb" stroke-width="2.4" fill="none" stroke-linejoin="round"/><path d="M58.5 105 h3 l1.4 22 -2.9 3 -2.9 -3z" fill="#2a3343"/>`
       : `<path d="M53 97 q7 6 14 0" stroke="${c.accent}" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".5"/>`;
     return `<rect x="36" y="94" width="48" height="78" rx="24" fill="${c.shirt}"/>${deco}`;
   }
 
   MD.art = {
-    char(who, expr) {
-      const c = who === 'kid' ? kidLook() : (CHAR[who] || CHAR.kid);
+    char(who, expr, profile) {
+      const c = lookOf(who, profile);
       const e = EXPR[expr] || EXPR.normal;
       return `<svg viewBox="0 0 120 160" class="char-svg" aria-hidden="true">
         ${body(who, c)}
-        <circle cx="60" cy="62" r="31" fill="${SKIN}"/>
+        <circle cx="60" cy="62" r="31" fill="${c.skin || SKIN}"/>
         <ellipse cx="44" cy="71" rx="5" ry="2.8" fill="${BLUSH}" opacity=".4"/>
         <ellipse cx="76" cy="71" rx="5" ry="2.8" fill="${BLUSH}" opacity=".4"/>
         ${eyes(e.eyes)}
@@ -231,8 +262,15 @@ window.MD = window.MD || {};
           ${crayon(`M${x} ${neck + h * .42} l-${h * .14} ${h * .38} M${x} ${neck + h * .42} l${h * .14} ${h * .38}`, INK, 2.2)}
           ${item ? `<text x="${x + h * .3}" y="${neck + h * .12}" font-size="${h * .28}">${item}</text>` : ''}`;
       };
-      const mom = (x, pose, item) => person(x, rnd(46, 54), '#8a6250', pk(['#f08aa2', '#c38bff', '#ff9e6e']), pose, item);
-      const kid = (x, pose, item) => person(x, rnd(30, 36), '#4b3a34', pk(['#5cc9a0', '#6cb8ff', '#ffc93c']), pose, item);
+      const PR = profileOf();
+      const hc = who => { const L = PR[who].look || {}; return MD.LOOK.hairColor[L.hairColor] ? MD.LOOK.hairColor[L.hairColor].c : '#4b3a34'; };
+      const girl = PR.kid.gender === 'girl';
+      const mom = (x, pose, item) => person(x, rnd(46, 54), hc('mom'), pk(['#f08aa2', '#c38bff', '#ff9e6e']), pose, item);
+      const kid = (x, pose, item) => {
+        const h = rnd(30, 36);
+        return person(x, h, hc('kid'), pk(['#5cc9a0', '#6cb8ff', '#ffc93c']), pose, item)
+          + (girl ? crayon(`M${x + h * .2} ${100 - h - h * .05} q${h * .3} ${h * .1} ${h * .18} ${h * .4}`, hc('kid'), 4) : '');
+      };
 
       const skies = [
         () => `<circle cx="${rnd(84, 104)}" cy="${rnd(14, 22)}" r="9" fill="#ffe27a" stroke="#f2b84b" stroke-width="2.5"/>${crayon('M100 4 v-3 M114 18 h4 M86 18 h-4 M110 8 l3 -3', '#f2b84b', 2)}`,
@@ -243,7 +281,7 @@ window.MD = window.MD || {};
       const sky = pk(skies)();
       const kidName = (MD.state && MD.state.profile.kid.name) || 'Ethan';
       const caption = ST === 'high' ? '' : ST === 'mid' ? (rnd(0, 1) < .7 ? pk(['給媽媽', '今天', 'Mom & me', '我們的一天', '謝謝媽媽', '最棒的一天']) : '')
-        : rnd(0, 1) < .6 ? pk(['媽媽', 'MAMA', '我和媽媽', '我愛媽媽', '♡♡♡', 'ETHAN', '最開心', '好玩！']) : '';
+        : rnd(0, 1) < .6 ? pk(['媽媽', 'MAMA', '我和媽媽', '我愛媽媽', '♡♡♡', kidName.toUpperCase(), '最開心', '好玩！']) : '';
       const hearts = Array.from({ length: ST === 'high' ? 0 : Math.floor(rnd(0, ST === 'mid' ? 2 : 3)) }, () => `<path transform="translate(${rnd(10, 110)} ${rnd(26, 50)}) scale(${rnd(.5, .9)})" d="M0 0 q4 -6 8 0 q4 -6 8 0 l-8 9z" fill="${pk(['#f08aa2', '#ff6fa5', '#c38bff'])}" opacity=".85"/>`).join('');
 
       const mx = rnd(24, 42), kx = mx + rnd(20, 30);
